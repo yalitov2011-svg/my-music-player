@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎵 הנגן המשותף של יאלי</title>
+    <title>🎵 הנגן החברתי - חדרים</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -16,32 +16,44 @@
             text-align: center; 
             margin: 0; padding: 20px;
         }
-        
-        h1 { text-shadow: 0 0 15px rgba(255, 0, 0, 0.7); margin-bottom: 10px; }
-        p { color: #aaa; margin-bottom: 30px; }
 
-        .control-panel {
-            background: #1e1e1e;
-            padding: 20px;
-            border-radius: 15px;
-            display: inline-block;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            margin-bottom: 30px;
-            width: 90%; max-width: 600px;
+        /* מסך כניסה */
+        #loginScreen {
+            margin-top: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
         }
 
+        .box {
+            background: #1e1e1e;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 90%; max-width: 400px;
+        }
+
+        /* מסך נגן */
+        #playerScreen { display: none; } /* מוסתר בהתחלה */
+
+        h1 { color: #ff0000; text-shadow: 0 0 10px rgba(255,0,0,0.5); }
+        
         input { 
-            padding: 12px; 
+            padding: 15px; 
             border-radius: 30px; 
-            border: none; 
-            width: 60%; 
-            outline: none; 
-            font-size: 16px;
-            padding-right: 15px;
+            border: 1px solid #333; 
+            background: #2a2a2a;
+            color: white;
+            width: 70%; 
+            font-size: 18px;
+            text-align: center;
+            outline: none;
+            margin-bottom: 10px;
         }
 
         button { 
-            padding: 12px 25px; 
+            padding: 12px 30px; 
             background: #ff0000; 
             color: white; 
             border: none; 
@@ -49,51 +61,72 @@
             border-radius: 30px; 
             font-weight: bold; 
             font-size: 16px;
-            transition: 0.3s;
+            transition: 0.2s;
+            width: 100%;
         }
         button:hover { transform: scale(1.05); background: #cc0000; }
+        
+        .secondary-btn { background: #444; margin-top: 10px; }
+        .secondary-btn:hover { background: #666; }
+
+        .room-badge {
+            background: #333;
+            padding: 5px 15px;
+            border-radius: 20px;
+            color: #00ff00;
+            font-family: monospace;
+            font-size: 20px;
+            margin-bottom: 20px;
+            display: inline-block;
+            border: 1px solid #00ff00;
+        }
 
         .player-box { 
             width: 100%; max-width: 800px; 
             aspect-ratio: 16/9; 
             background: #000; 
-            margin: 0 auto; 
+            margin: 20px auto; 
             border-radius: 15px; 
             overflow: hidden; 
-            box-shadow: 0 0 50px rgba(255,0,0,0.2);
             border: 2px solid #333;
         }
         
         iframe { width: 100%; height: 100%; border: none; }
-        
-        .status { 
-            margin-top: 15px; 
-            font-size: 14px; 
-            color: #00ff00; 
-            font-weight: bold;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <h1>🔊 נגן משותף LIVE</h1>
-    <p>כל מי שנכנס לקישור הזה - שומע בדיוק את מה שאתה שומע!</p>
-
-    <div class="control-panel">
-        <input type="text" id="searchQuery" placeholder="חפש שיר (למשל: עומר אדם)...">
-        <button onclick="searchAndSync()">נגן לכולם ▶</button>
-        <div class="status" id="statusText">מחובר וממתין לפקודה... 📡</div>
+    <div id="loginScreen">
+        <h1>🎧 כניסה לנגן המשותף</h1>
+        <div class="box">
+            <h3>צור חדר חדש</h3>
+            <button onclick="createRoom()">✨ צור חדר וקבל קוד</button>
+            
+            <hr style="border-color: #333; margin: 20px 0;">
+            
+            <h3>או הצטרף לחבר</h3>
+            <input type="number" id="roomInput" placeholder="הכנס קוד חדר (למשל 1234)">
+            <button class="secondary-btn" onclick="joinRoom()">🚀 כנס לחדר</button>
+        </div>
     </div>
 
-    <div class="player-box">
-        <div id="player"></div>
+    <div id="playerScreen">
+        <h1>🎵 מחובר לחדר</h1>
+        <div class="room-badge">קוד חדר: <span id="displayRoomCode">---</span></div>
+        
+        <div>
+            <input type="text" id="searchQuery" placeholder="איזה שיר לשים לכולם?">
+            <button onclick="searchAndSync()" style="width: auto;">נגן ▶</button>
+        </div>
+
+        <div class="player-box">
+            <div id="player"></div>
+        </div>
+        <p id="statusText" style="color: gray;">ממתין לשיר...</p>
     </div>
 
     <script>
-        // --- ההגדרות שלך ---
+        // --- הגדרות Firebase שלך ---
         const firebaseConfig = {
             apiKey: "AIzaSyDKN3qgnvUP4SZX9aOAaThnDI4vUjjVw9A",
             authDomain: "musicsync-58d86.firebaseapp.com",
@@ -104,19 +137,50 @@
             databaseURL: "https://musicsync-58d86-default-rtdb.firebaseio.com"
         };
 
-        // אתחול המערכת
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const YOUTUBE_API_KEY = 'AIzaSyAuLutPPSJlZJKkfBrzRNURSibcqkeeA60'; 
 
         let player;
         let isSyncing = false; 
+        let currentRoom = null; // כאן נשמור את מספר החדר
 
-        // טעינת יוטיוב
-        var tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        var firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        // --- לוגיקה של חדרים ---
+
+        function createRoom() {
+            // מגריל מספר בין 1000 ל-9999
+            const newCode = Math.floor(1000 + Math.random() * 9000);
+            enterRoom(newCode);
+        }
+
+        function joinRoom() {
+            const code = document.getElementById('roomInput').value;
+            if (code.length < 4) {
+                alert("נא להכניס קוד תקין");
+                return;
+            }
+            enterRoom(code);
+        }
+
+        function enterRoom(code) {
+            currentRoom = code;
+            // הסתרת מסך כניסה והצגת הנגן
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('playerScreen').style.display = 'block';
+            document.getElementById('displayRoomCode').innerText = code;
+            
+            // טעינת הנגן והתחברות לחדר הספציפי
+            loadYoutubePlayer();
+        }
+
+        // --- נגן וסנכרון ---
+
+        function loadYoutubePlayer() {
+            var tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            var firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        }
 
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
@@ -126,95 +190,78 @@
                 playerVars: { 
                     'autoplay': 1, 
                     'controls': 1,
-                    'rel': 0,
-                    'playsinline': 1
+                    'rel': 0, // מפחית המלצות בסוף
+                    'modestbranding': 1 // מסתיר לוגואים
                 },
                 events: {
-                    'onReady': connectToFirebase, 
+                    'onReady': connectToRoom, 
                     'onStateChange': onPlayerStateChange
                 }
             });
         }
 
-        // --- חיבור למוח המשותף ---
-        function connectToFirebase() {
-            const syncRef = db.ref('current_song');
+        function connectToRoom() {
+            // מתחבר רק לנתיב של החדר הספציפי!
+            // rooms/1234/current_song
+            const roomRef = db.ref('rooms/' + currentRoom);
 
-            syncRef.on('value', (snapshot) => {
+            roomRef.on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (!data) return;
 
-                document.getElementById('statusText').innerText = `🎶 מנגן כרגע אצל כולם: ${data.title}`;
+                document.getElementById('statusText').innerText = `מנגן: ${data.title}`;
 
-                // --- כאן התיקון לדיליי ---
-                // אם השיר שונה ממה שיש בנגן כרגע
+                // סנכרון שיר
                 if (player.getVideoData().video_id !== data.videoId) {
                     isSyncing = true;
                     player.loadVideoById(data.videoId);
-                    player.seekTo(0); // <-- פקודה חדשה: מכריח להתחיל בדיוק מ-0
-                    setTimeout(() => isSyncing = false, 1500); // נותן לזה קצת יותר זמן להסתנכרן
+                    player.seekTo(0);
+                    setTimeout(() => isSyncing = false, 1500);
                 }
 
-                // סנכרון Play/Pause
-                const playerState = player.getPlayerState();
-                if (data.status === 2 && playerState !== 2) {
-                    player.pauseVideo();
-                } else if (data.status === 1 && playerState !== 1 && playerState !== 3) {
-                    player.playVideo();
-                }
+                // סנכרון מצב (Play/Pause)
+                const state = player.getPlayerState();
+                if (data.status === 2 && state !== 2) player.pauseVideo();
+                else if (data.status === 1 && state !== 1 && state !== 3) player.playVideo();
             });
         }
 
-        // --- כשאתה לוחץ על משהו בנגן ---
         function onPlayerStateChange(event) {
-            if (isSyncing) return; 
-
-            // 1=Play, 2=Pause
+            if (isSyncing || !currentRoom) return; 
             if (event.data === 1 || event.data === 2) {
-                db.ref('current_song').update({ status: event.data });
+                db.ref('rooms/' + currentRoom).update({ status: event.data });
             }
         }
 
-        // --- חיפוש שיר ושליחה לכולם ---
         async function searchAndSync() {
             const query = document.getElementById('searchQuery').value;
             if (!query) return;
 
-            const btn = document.querySelector('button');
-            btn.innerText = "שולח...";
-            
-            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=${encodeURIComponent(query + " lyrics audio")}&videoEmbeddable=true&key=${YOUTUBE_API_KEY}`;
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=${encodeURIComponent(query + " lyrics")}&videoEmbeddable=true&key=${YOUTUBE_API_KEY}`;
             
             try {
                 const res = await fetch(url);
                 const data = await res.json();
-                
-                if (!data.items || data.items.length === 0) {
-                    alert("לא נמצא שיר, נסה שם אחר");
-                    btn.innerText = "נגן לכולם ▶";
-                    return;
-                }
+                if (!data.items || data.items.length === 0) return alert("לא נמצא");
 
                 const video = data.items[0];
 
-                // שליחה לשרת
-                db.ref('current_song').set({
+                // שולח את השיר לחדר הספציפי ב-Firebase
+                db.ref('rooms/' + currentRoom).set({
                     videoId: video.id.videoId,
                     title: video.snippet.title,
                     status: 1
                 });
                 
                 document.getElementById('searchQuery').value = "";
-                btn.innerText = "נגן לכולם ▶";
 
             } catch (error) {
-                console.error(error);
-                alert("שגיאה בחיפוש");
-                btn.innerText = "נגן לכולם ▶";
+                alert("שגיאה");
             }
         }
-
-        document.getElementById('searchQuery').addEventListener('keypress', function (e) {
+        
+        // אנטר לחיפוש
+        document.getElementById('searchQuery').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') searchAndSync();
         });
     </script>
