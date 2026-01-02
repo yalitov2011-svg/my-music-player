@@ -93,7 +93,7 @@
     </div>
 
     <script>
-        // --- הגדרות החיבור שלך (לקחתי מהתמונה ששלחת) ---
+        // --- ההגדרות שלך ---
         const firebaseConfig = {
             apiKey: "AIzaSyDKN3qgnvUP4SZX9aOAaThnDI4vUjjVw9A",
             authDomain: "musicsync-58d86.firebaseapp.com",
@@ -101,7 +101,6 @@
             storageBucket: "musicsync-58d86.firebasestorage.app",
             messagingSenderId: "367949692420",
             appId: "1:367949692420:web:414a34b0c14dc46e51ff51",
-            // הוספתי את כתובת השרת באופן אוטומטי
             databaseURL: "https://musicsync-58d86-default-rtdb.firebaseio.com"
         };
 
@@ -147,14 +146,16 @@
 
                 document.getElementById('statusText').innerText = `🎶 מנגן כרגע אצל כולם: ${data.title}`;
 
-                // אם זה שיר חדש - טען אותו
+                // --- כאן התיקון לדיליי ---
+                // אם השיר שונה ממה שיש בנגן כרגע
                 if (player.getVideoData().video_id !== data.videoId) {
                     isSyncing = true;
                     player.loadVideoById(data.videoId);
-                    setTimeout(() => isSyncing = false, 1000);
+                    player.seekTo(0); // <-- פקודה חדשה: מכריח להתחיל בדיוק מ-0
+                    setTimeout(() => isSyncing = false, 1500); // נותן לזה קצת יותר זמן להסתנכרן
                 }
 
-                // אם מישהו עצר או הפעיל
+                // סנכרון Play/Pause
                 const playerState = player.getPlayerState();
                 if (data.status === 2 && playerState !== 2) {
                     player.pauseVideo();
@@ -182,7 +183,6 @@
             const btn = document.querySelector('button');
             btn.innerText = "שולח...";
             
-            // טריק: הוספת lyrics עוזרת למצוא שירים שעובדים
             const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=${encodeURIComponent(query + " lyrics audio")}&videoEmbeddable=true&key=${YOUTUBE_API_KEY}`;
             
             try {
@@ -197,7 +197,7 @@
 
                 const video = data.items[0];
 
-                // שליחה לשרת - זה יעדכן את כולם!
+                // שליחה לשרת
                 db.ref('current_song').set({
                     videoId: video.id.videoId,
                     title: video.snippet.title,
@@ -214,7 +214,6 @@
             }
         }
 
-        // הפעלה באנטר
         document.getElementById('searchQuery').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') searchAndSync();
         });
