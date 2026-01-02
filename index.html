@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>נגן עוקף חסימות</title>
+    <title>הנגן החברתי שלי</title>
     <style>
         body {
             background-color: #121212;
             color: white;
-            font-family: sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -16,84 +16,39 @@
             margin: 0;
         }
 
-        /* תיבת חיפוש */
-        .search-box {
-            margin-bottom: 20px;
-            display: flex;
-            gap: 10px;
+        h2 { text-shadow: 0 0 10px rgba(255,0,0,0.5); }
+
+        .search-box { display: flex; gap: 10px; margin-bottom: 20px; width: 100%; max-width: 600px; }
+        input { padding: 12px; border-radius: 25px; border: none; flex: 1; outline: none; padding-right: 20px; font-size: 16px;}
+        button { padding: 10px 25px; background: #e62117; color: white; border: none; cursor: pointer; border-radius: 25px; font-weight: bold; transition: 0.3s;}
+        button:hover { background: #ff0000; transform: scale(1.05); }
+
+        /* כפתור שיתוף */
+        .share-btn {
+            background: #25D366; /* ווטסאפ גרין */
+            margin-bottom: 15px;
+            display: none; /* מוסתר עד שיש שיר */
         }
 
-        input {
-            padding: 10px;
-            border-radius: 5px;
-            border: none;
-            width: 250px;
-        }
-
-        button {
-            padding: 10px 20px;
-            border-radius: 5px;
-            border: none;
-            background: #e62117; /* YouTube Red */
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        button:hover { background: #bf1b13; }
-
-        /* נגן */
         .video-wrapper {
-            width: 100%;
-            max-width: 640px;
-            aspect-ratio: 16/9;
-            background: #000;
-            margin-bottom: 20px;
-            border: 2px solid #333;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 100%; max-width: 700px; aspect-ratio: 16/9;
+            background: black; margin-bottom: 20px;
+            border-radius: 15px; overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            display: flex; align-items: center; justify-content: center;
         }
+        
+        iframe { width: 100%; height: 100%; border: none; }
 
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
+        .list { width: 100%; max-width: 700px; display: grid; gap: 10px; }
+        .item { 
+            display: flex; gap: 15px; padding: 10px; 
+            background: #1e1e1e; border-radius: 10px;
+            cursor: pointer; transition: 0.2s; align-items: center;
         }
-
-        /* רשימת שירים */
-        .list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            width: 100%;
-            max-width: 640px;
-        }
-
-        .item {
-            display: flex;
-            gap: 10px;
-            background: #1e1e1e;
-            padding: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .item:hover { background: #333; }
-
-        .item img {
-            width: 120px;
-            height: 68px;
-            object-fit: cover;
-        }
-
-        .item-info {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
+        .item:hover { background: #333; transform: translateX(-5px); }
+        .item img { width: 120px; height: 68px; object-fit: cover; border-radius: 5px; }
+        .item-info { display: flex; flex-direction: column; }
         .item-title { font-weight: bold; font-size: 14px; }
         .item-channel { font-size: 12px; color: #aaa; margin-top: 5px; }
 
@@ -101,93 +56,104 @@
 </head>
 <body>
 
-    <h2>🎵 נגן מוזיקה (גרסה פתוחה)</h2>
+    <h2>🎵 הנגן החברתי</h2>
 
     <div class="search-box">
-        <input type="text" id="query" placeholder="חפש שיר...">
+        <input type="text" id="query" placeholder="איזה שיר בא לך?">
         <button onclick="search()">חפש</button>
     </div>
 
-    <div class="video-wrapper" id="player">
-        <p style="color: gray;">בחר שיר לניגון</p>
-    </div>
+    <button id="shareBtn" class="share-btn" onclick="shareSong()">📤 שתף את השיר הזה עם חבר</button>
 
+    <div class="video-wrapper" id="player">
+        <p style="color:gray">בחר שיר או קבל לינק מחבר</p>
+    </div>
+    
     <div class="list" id="results"></div>
 
     <script>
-        // המפתח שלך
         const KEY = 'AIzaSyAuLutPPSJlZJKkfBrzRNURSibcqkeeA60';
+        let currentVideoId = '';
+
+        // --- בדיקה בטעינת הדף: האם הגענו דרך קישור? ---
+        window.onload = function() {
+            // בודק אם יש פרמטר ?song=... בכתובת
+            const params = new URLSearchParams(window.location.search);
+            const songId = params.get('song');
+            
+            if (songId) {
+                play(songId); // מנגן ישר
+            }
+        };
 
         async function search() {
             let q = document.getElementById('query').value;
             if (!q) return;
 
-            // --- הטריק: חיפוש מילים (Lyrics) ---
-            // זה מוצא גרסאות שהן לא הקליפ הרשמי החסום
-            let finalQuery = q + " lyrics"; 
-
-            let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=10&q=${encodeURIComponent(finalQuery)}&videoEmbeddable=true&key=${KEY}`;
+            // חיפוש חכם (מילים)
+            let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=10&q=${encodeURIComponent(q + " lyrics")}&videoEmbeddable=true&key=${KEY}`;
 
             try {
-                let response = await fetch(url);
-                let data = await response.json();
-
-                if (data.error) {
-                    alert("שגיאה: " + data.error.message);
-                    return;
-                }
-
+                let res = await fetch(url);
+                let data = await res.json();
+                
+                if (data.error) { alert("שגיאה: " + data.error.message); return; }
+                
                 showResults(data.items);
-            } catch (e) {
-                alert("שגיאת רשת");
-            }
+            } catch (e) { alert("בעיה ברשת"); }
         }
 
         function showResults(videos) {
-            let container = document.getElementById('results');
-            container.innerHTML = ""; // ניקוי
-
+            let div = document.getElementById('results');
+            div.innerHTML = "";
+            
             videos.forEach(v => {
-                let title = v.snippet.title;
                 let id = v.id.videoId;
+                let title = v.snippet.title;
                 let img = v.snippet.thumbnails.medium.url;
                 let channel = v.snippet.channelTitle;
 
-                let div = document.createElement('div');
-                div.className = 'item';
-                div.onclick = () => play(id); // לחיצה מפעילה
-
-                div.innerHTML = `
-                    <img src="${img}">
-                    <div class="item-info">
-                        <div class="item-title">${title}</div>
-                        <div class="item-channel">${channel}</div>
+                div.innerHTML += `
+                    <div class="item" onclick="play('${id}')">
+                        <img src="${img}">
+                        <div class="item-info">
+                            <div class="item-title">${title}</div>
+                            <div class="item-channel">${channel}</div>
+                        </div>
                     </div>
                 `;
-
-                container.appendChild(div);
             });
         }
 
         function play(id) {
-            // שינוי הנגן לכתובת Embed רגילה בלי אוטומציה מסובכת
-            // הסרתי את autoplay=1 כי דפדפנים לפעמים חוסמים את זה
+            currentVideoId = id;
+            
+            // 1. ניגון השיר
             document.getElementById('player').innerHTML = `
-                <iframe 
-                    src="https://www.youtube.com/embed/${id}?rel=0&modestbranding=1" 
-                    allowfullscreen>
-                </iframe>
+                <iframe src="https://www.youtube.com/embed/${id}?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
             `;
-            // גלילה לנגן
+
+            // 2. עדכון הכתובת בדפדפן (כדי שיהיה אפשר להעתיק)
+            // זה מוסיף ?song=XYZ לסוף הכתובת בלי לרענן
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?song=' + id;
+            window.history.pushState({path: newUrl}, '', newUrl);
+
+            // 3. הצגת כפתור השיתוף
+            document.getElementById('shareBtn').style.display = "block";
+            
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-        
-        // חיפוש באנטר
+
+        function shareSong() {
+            // מעתיק את הכתובת ללוח
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                alert("הקישור הועתק! 📋\nעכשיו שלח אותו לחבר והוא ישמע את השיר הזה.");
+            });
+        }
+
         document.getElementById('query').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') search();
         });
-
     </script>
-
 </body>
 </html>
