@@ -17,7 +17,7 @@
             margin: 0; padding: 20px;
         }
 
-        /* עיצוב מסך כניסה */
+        /* --- מסך כניסה --- */
         #loginScreen {
             margin-top: 50px;
             display: flex;
@@ -71,13 +71,14 @@
         .secondary-btn { background: #444; }
         .secondary-btn:hover { background: #666; }
 
-        /* תגיות מידע (מספר חדר וכמות מחוברים) */
+        /* --- תגיות מידע --- */
         .info-bar {
             display: flex;
             justify-content: center;
             gap: 15px;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             flex-wrap: wrap;
+            position: relative; /* בשביל התפריט הנפתח */
         }
 
         .badge {
@@ -90,11 +91,44 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            user-select: none;
         }
         
         .room-code { color: #00ff00; border-color: #00ff00; }
-        .user-count { color: #00ccff; border-color: #00ccff; }
+        
+        /* עיצוב כפתור המשתמשים */
+        .user-count { 
+            color: #00ccff; 
+            border-color: #00ccff; 
+            cursor: pointer; 
+            transition: 0.2s;
+        }
+        .user-count:hover { background: #444; }
 
+        /* --- רשימת שמות נפתחת --- */
+        #usersListPopup {
+            display: none; /* מוסתר בהתחלה */
+            position: absolute;
+            top: 50px; /* מתחת לתגיות */
+            background: #222;
+            border: 1px solid #00ccff;
+            border-radius: 10px;
+            padding: 10px;
+            width: 200px;
+            z-index: 100;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.8);
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .user-item {
+            padding: 5px;
+            border-bottom: 1px solid #444;
+            font-size: 16px;
+        }
+        .user-item:last-child { border-bottom: none; }
+
+        /* --- נגן --- */
         .player-box { 
             width: 100%; max-width: 800px; 
             aspect-ratio: 16/9; 
@@ -133,7 +167,15 @@
         
         <div class="info-bar">
             <div class="badge room-code">קוד חדר: <span id="displayRoomCode">---</span></div>
-            <div class="badge user-count">👥 מחוברים: <span id="connectedCount">1</span></div>
+            
+            <div class="badge user-count" onclick="toggleUsersList()">
+                👥 מחוברים: <span id="connectedCount" style="margin: 0 5px;">1</span> ▼
+            </div>
+            
+            <div id="usersListPopup">
+                <div style="font-size:12px; color:gray; margin-bottom:5px;">רשימת משתתפים:</div>
+                <div id="usersListContent"></div>
+            </div>
         </div>
         
         <h3 id="welcomeMsg" style="color: gray; margin-top:0;"></h3>
@@ -150,7 +192,7 @@
     </div>
 
     <script>
-        // --- הגדרות Firebase שלך ---
+        // --- הגדרות Firebase ---
         const firebaseConfig = {
             apiKey: "AIzaSyDKN3qgnvUP4SZX9aOAaThnDI4vUjjVw9A",
             authDomain: "musicsync-58d86.firebaseapp.com",
@@ -170,7 +212,7 @@
         let currentRoom = null;
         let myName = "";
 
-        // --- לוגיקה של כניסה וחדרים ---
+        // --- לוגיקה של כניסה ---
 
         function checkName() {
             const name = document.getElementById('usernameInput').value.trim();
@@ -183,7 +225,7 @@
 
         function createRoom() {
             myName = checkName();
-            if (!myName) return; // עוצר אם אין שם
+            if (!myName) return; 
 
             const newCode = Math.floor(1000 + Math.random() * 9000);
             enterRoom(newCode);
@@ -191,7 +233,7 @@
 
         function joinRoom() {
             myName = checkName();
-            if (!myName) return; // עוצר אם אין שם
+            if (!myName) return; 
 
             const code = document.getElementById('roomInput').value;
             if (code.length < 4) {
@@ -204,30 +246,43 @@
         function enterRoom(code) {
             currentRoom = code;
             
-            // עדכון המסך
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('playerScreen').style.display = 'block';
             document.getElementById('displayRoomCode').innerText = code;
             document.getElementById('welcomeMsg').innerText = `שלום, ${myName}`;
             
-            // טעינת הנגן
             loadYoutubePlayer();
 
-            // --- הרשמה כמשתמש מחובר (פיצ'ר חדש) ---
-            // 1. יוצר משתמש חדש ברשימת המשתמשים בחדר
+            // --- ניהול משתמשים ---
             const userRef = db.ref(`rooms/${code}/users`).push();
-            
-            // 2. שומר את הפרטים
             userRef.set({ name: myName });
+            userRef.onDisconnect().remove(); // מחיקה ביציאה
 
-            // 3. אומר לשרת: "אם אני מתנתק/סוגר את האתר - תמחק אותי מהרשימה"
-            userRef.onDisconnect().remove();
-
-            // 4. מאזין לכמות המחוברים
+            // האזנה לרשימת המשתמשים (כמות + שמות)
             db.ref(`rooms/${code}/users`).on('value', (snapshot) => {
-                const count = snapshot.numChildren(); // סופר כמה ילדים (משתמשים) יש
+                const usersListDiv = document.getElementById('usersListContent');
+                usersListDiv.innerHTML = ""; // ניקוי הרשימה
+                
+                let count = 0;
+                snapshot.forEach((child) => {
+                    const user = child.val();
+                    count++;
+                    // הוספת שם לרשימה
+                    usersListDiv.innerHTML += `<div class="user-item">👤 ${user.name}</div>`;
+                });
+
                 document.getElementById('connectedCount').innerText = count;
             });
+        }
+
+        // --- פונקציה להצגה/הסתרה של הרשימה ---
+        function toggleUsersList() {
+            const popup = document.getElementById('usersListPopup');
+            if (popup.style.display === "none" || popup.style.display === "") {
+                popup.style.display = "block";
+            } else {
+                popup.style.display = "none";
+            }
         }
 
         // --- נגן וסנכרון ---
@@ -257,7 +312,6 @@
         }
 
         function connectToRoomData() {
-            // מאזין לשיר שמתנגן בחדר
             const roomRef = db.ref(`rooms/${currentRoom}/current_song`);
 
             roomRef.on('value', (snapshot) => {
@@ -266,7 +320,6 @@
 
                 document.getElementById('statusText').innerText = `מנגן: ${data.title}`;
 
-                // סנכרון שיר
                 if (player.getVideoData().video_id !== data.videoId) {
                     isSyncing = true;
                     player.loadVideoById(data.videoId);
@@ -274,7 +327,6 @@
                     setTimeout(() => isSyncing = false, 1500);
                 }
 
-                // סנכרון מצב (Play/Pause)
                 const state = player.getPlayerState();
                 if (data.status === 2 && state !== 2) player.pauseVideo();
                 else if (data.status === 1 && state !== 1 && state !== 3) player.playVideo();
