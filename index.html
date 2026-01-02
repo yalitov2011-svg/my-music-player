@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎵 הנגן המשותף V5 - הורדה ישירה</title>
+    <title>🎵 הנגן המשותף V6 - הורדה פנימית</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -71,7 +71,7 @@
         .secondary-btn { background: #444; }
         .secondary-btn:hover { background: #666; }
 
-        /* כפתורי פעולה מתחת לנגן */
+        /* כפתורי פעולה */
         .action-buttons {
             display: flex;
             gap: 10px;
@@ -88,7 +88,7 @@
             gap: 5px;
         }
         
-        .dl-btn { background: #00C853; border: none; } /* ירוק להורדה */
+        .dl-btn { background: #00C853; border: none; }
         .fav-btn { background: #e91e63; border: none; }
 
         /* --- תגיות מידע --- */
@@ -115,16 +115,9 @@
         }
         
         .room-code { color: #00ff00; border-color: #00ff00; }
-        
-        .user-count { 
-            color: #00ccff; 
-            border-color: #00ccff; 
-            cursor: pointer; 
-            transition: 0.2s;
-        }
-        .user-count:hover { background: #444; }
+        .user-count { color: #00ccff; border-color: #00ccff; cursor: pointer; }
 
-        /* --- רשימת שמות נפתחת --- */
+        /* --- רשימת משתמשים --- */
         #usersListPopup {
             display: none; 
             position: absolute;
@@ -139,11 +132,10 @@
             left: 50%;
             transform: translateX(-50%);
         }
-
         .user-item { padding: 8px; border-bottom: 1px solid #444; text-align: right; }
         .user-item:last-child { border-bottom: none; }
 
-        /* --- רשימת מועדפים --- */
+        /* --- מועדפים --- */
         #favoritesSection {
             margin-top: 30px;
             width: 90%;
@@ -152,7 +144,6 @@
             margin-right: auto;
             text-align: right;
         }
-        
         .fav-item {
             background: #1e1e1e;
             padding: 10px;
@@ -176,11 +167,56 @@
             overflow: hidden; 
             border: 2px solid #333;
         }
-        
         iframe { width: 100%; height: 100%; border: none; }
+
+        /* --- חלון הורדה פנימי (חדש!) --- */
+        #downloadModal {
+            display: none; /* מוסתר כברירת מחדל */
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .modal-content {
+            background: #fff;
+            width: 90%;
+            max-width: 500px;
+            height: 60vh;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .close-modal-btn {
+            position: absolute;
+            top: 10px; right: 10px;
+            background: red;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px; height: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 10;
+        }
+
     </style>
 </head>
 <body>
+
+    <div id="downloadModal">
+        <div style="color: white; margin-bottom: 10px; font-weight:bold;">⬇️ הורדת שיר</div>
+        <div class="modal-content">
+            <button class="close-modal-btn" onclick="closeDownloadModal()">X</button>
+            <iframe id="downloadFrame" src="" style="width:100%; height:100%;"></iframe>
+        </div>
+        <div style="color: #aaa; margin-top: 10px; font-size: 12px;">לחץ על Download בתוך החלון ואז סגור אותו</div>
+    </div>
 
     <div id="loginScreen">
         <h1>🎧 הנגן המשותף</h1>
@@ -226,7 +262,7 @@
 
         <div class="action-buttons">
             <button class="action-btn fav-btn" onclick="addToFavorites()">❤️ שמור למועדפים</button>
-            <button class="action-btn dl-btn" onclick="directDownload()">⬇️ הורד שיר זה (ישיר)</button>
+            <button class="action-btn dl-btn" onclick="openInternalDownload()">⬇️ הורדה ישירה</button>
         </div>
 
         <div id="favoritesSection">
@@ -257,7 +293,7 @@
         let currentSongTitle = ""; 
         let currentSongId = "";    
 
-        // --- כניסה מהירה ---
+        // --- כניסה ---
         function getLoginDetails() {
             const name = document.getElementById('usernameInput').value.trim();
             if (name === "") { alert("חייב לרשום שם!"); return false; }
@@ -377,16 +413,26 @@
             if (e.key === 'Enter') searchAndSync();
         });
 
-        // --- פונקציה חדשה: הורדה ישירה ---
-        function directDownload() {
+        // --- הורדה פנימית (חלון בתוך האתר) ---
+        function openInternalDownload() {
             if (!currentSongId) {
                 alert("קודם תפעיל שיר!");
                 return;
             }
-            // פתיחת אתר המרה ספציפי עם הוידאו כבר בפנים
-            // זה מדלג על החיפוש בגוגל ולוקח אותך ישר להורדה
-            const url = `https://www.y2mate.com/youtube/${currentSongId}`;
-            window.open(url, '_blank');
+            
+            // שימוש באתר המרה שמאפשר הצגה בתוך חלון
+            // הטריק: אנו פותחים את כלי ההמרה בחלון הקטן שיצרנו
+            const downloadUrl = `https://tomp3.cc/youtube-downloader/${currentSongId}`;
+            
+            const frame = document.getElementById('downloadFrame');
+            frame.src = downloadUrl;
+            
+            document.getElementById('downloadModal').style.display = 'flex';
+        }
+
+        function closeDownloadModal() {
+            document.getElementById('downloadModal').style.display = 'none';
+            document.getElementById('downloadFrame').src = ""; // ניקוי כדי להפסיק פעילות
         }
 
         // --- מועדפים ---
@@ -405,12 +451,10 @@
             let favorites = JSON.parse(localStorage.getItem('myFavs')) || [];
             const listDiv = document.getElementById('favoritesList');
             listDiv.innerHTML = "";
-
             if (favorites.length === 0) {
                 listDiv.innerHTML = "<p style='font-size:12px; color:#555;'>אין שירים שמורים עדיין</p>";
                 return;
             }
-
             favorites.forEach((song, index) => {
                 listDiv.innerHTML += `
                     <div class="fav-item">
