@@ -17,7 +17,7 @@
             margin: 0; padding: 20px;
         }
 
-        /* מסך כניסה */
+        /* עיצוב מסך כניסה */
         #loginScreen {
             margin-top: 50px;
             display: flex;
@@ -34,8 +34,7 @@
             width: 90%; max-width: 400px;
         }
 
-        /* מסך נגן */
-        #playerScreen { display: none; } /* מוסתר בהתחלה */
+        #playerScreen { display: none; } 
 
         h1 { color: #ff0000; text-shadow: 0 0 10px rgba(255,0,0,0.5); }
         
@@ -45,12 +44,14 @@
             border: 1px solid #333; 
             background: #2a2a2a;
             color: white;
-            width: 70%; 
-            font-size: 18px;
+            width: 80%; 
+            font-size: 16px;
             text-align: center;
             outline: none;
             margin-bottom: 10px;
         }
+        
+        input:focus { border-color: #ff0000; }
 
         button { 
             padding: 12px 30px; 
@@ -63,23 +64,36 @@
             font-size: 16px;
             transition: 0.2s;
             width: 100%;
+            margin-top: 10px;
         }
         button:hover { transform: scale(1.05); background: #cc0000; }
         
-        .secondary-btn { background: #444; margin-top: 10px; }
+        .secondary-btn { background: #444; }
         .secondary-btn:hover { background: #666; }
 
-        .room-badge {
-            background: #333;
-            padding: 5px 15px;
-            border-radius: 20px;
-            color: #00ff00;
-            font-family: monospace;
-            font-size: 20px;
+        /* תגיות מידע (מספר חדר וכמות מחוברים) */
+        .info-bar {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
             margin-bottom: 20px;
-            display: inline-block;
-            border: 1px solid #00ff00;
+            flex-wrap: wrap;
         }
+
+        .badge {
+            background: #333;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-family: monospace;
+            font-size: 18px;
+            border: 1px solid #555;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .room-code { color: #00ff00; border-color: #00ff00; }
+        .user-count { color: #00ccff; border-color: #00ccff; }
 
         .player-box { 
             width: 100%; max-width: 800px; 
@@ -97,25 +111,35 @@
 <body>
 
     <div id="loginScreen">
-        <h1>🎧 כניסה לנגן המשותף</h1>
+        <h1>🎧 הנגן המשותף</h1>
         <div class="box">
-            <h3>צור חדר חדש</h3>
-            <button onclick="createRoom()">✨ צור חדר וקבל קוד</button>
+            <label>שלב 1: הכנס את השם שלך</label>
+            <input type="text" id="usernameInput" placeholder="השם שלך (חובה!)">
             
             <hr style="border-color: #333; margin: 20px 0;">
             
-            <h3>או הצטרף לחבר</h3>
-            <input type="number" id="roomInput" placeholder="הכנס קוד חדר (למשל 1234)">
-            <button class="secondary-btn" onclick="joinRoom()">🚀 כנס לחדר</button>
+            <label>שלב 2: בחר לאן להיכנס</label>
+            <button onclick="createRoom()">✨ צור חדר חדש</button>
+            
+            <p style="margin: 10px 0; color: #777;">--- או ---</p>
+            
+            <input type="number" id="roomInput" placeholder="קוד חדר (למשל 1234)">
+            <button class="secondary-btn" onclick="joinRoom()">🚀 כנס לחדר קיים</button>
         </div>
     </div>
 
     <div id="playerScreen">
         <h1>🎵 מחובר לחדר</h1>
-        <div class="room-badge">קוד חדר: <span id="displayRoomCode">---</span></div>
         
+        <div class="info-bar">
+            <div class="badge room-code">קוד חדר: <span id="displayRoomCode">---</span></div>
+            <div class="badge user-count">👥 מחוברים: <span id="connectedCount">1</span></div>
+        </div>
+        
+        <h3 id="welcomeMsg" style="color: gray; margin-top:0;"></h3>
+
         <div>
-            <input type="text" id="searchQuery" placeholder="איזה שיר לשים לכולם?">
+            <input type="text" id="searchQuery" placeholder="איזה שיר לשים לכולם?" style="width: 60%;">
             <button onclick="searchAndSync()" style="width: auto;">נגן ▶</button>
         </div>
 
@@ -143,20 +167,35 @@
 
         let player;
         let isSyncing = false; 
-        let currentRoom = null; // כאן נשמור את מספר החדר
+        let currentRoom = null;
+        let myName = "";
 
-        // --- לוגיקה של חדרים ---
+        // --- לוגיקה של כניסה וחדרים ---
+
+        function checkName() {
+            const name = document.getElementById('usernameInput').value.trim();
+            if (name === "") {
+                alert("חייב לרשום שם לפני שנכנסים! 😡");
+                return null;
+            }
+            return name;
+        }
 
         function createRoom() {
-            // מגריל מספר בין 1000 ל-9999
+            myName = checkName();
+            if (!myName) return; // עוצר אם אין שם
+
             const newCode = Math.floor(1000 + Math.random() * 9000);
             enterRoom(newCode);
         }
 
         function joinRoom() {
+            myName = checkName();
+            if (!myName) return; // עוצר אם אין שם
+
             const code = document.getElementById('roomInput').value;
             if (code.length < 4) {
-                alert("נא להכניס קוד תקין");
+                alert("נא להכניס קוד חדר תקין");
                 return;
             }
             enterRoom(code);
@@ -164,22 +203,44 @@
 
         function enterRoom(code) {
             currentRoom = code;
-            // הסתרת מסך כניסה והצגת הנגן
+            
+            // עדכון המסך
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('playerScreen').style.display = 'block';
             document.getElementById('displayRoomCode').innerText = code;
+            document.getElementById('welcomeMsg').innerText = `שלום, ${myName}`;
             
-            // טעינת הנגן והתחברות לחדר הספציפי
+            // טעינת הנגן
             loadYoutubePlayer();
+
+            // --- הרשמה כמשתמש מחובר (פיצ'ר חדש) ---
+            // 1. יוצר משתמש חדש ברשימת המשתמשים בחדר
+            const userRef = db.ref(`rooms/${code}/users`).push();
+            
+            // 2. שומר את הפרטים
+            userRef.set({ name: myName });
+
+            // 3. אומר לשרת: "אם אני מתנתק/סוגר את האתר - תמחק אותי מהרשימה"
+            userRef.onDisconnect().remove();
+
+            // 4. מאזין לכמות המחוברים
+            db.ref(`rooms/${code}/users`).on('value', (snapshot) => {
+                const count = snapshot.numChildren(); // סופר כמה ילדים (משתמשים) יש
+                document.getElementById('connectedCount').innerText = count;
+            });
         }
 
         // --- נגן וסנכרון ---
 
         function loadYoutubePlayer() {
-            var tag = document.createElement('script');
-            tag.src = "https://www.youtube.com/iframe_api";
-            var firstScriptTag = document.getElementsByTagName('script')[0];
-            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+            if (typeof YT !== 'undefined' && YT.Player) {
+                onYouTubeIframeAPIReady();
+            } else {
+                var tag = document.createElement('script');
+                tag.src = "https://www.youtube.com/iframe_api";
+                var firstScriptTag = document.getElementsByTagName('script')[0];
+                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+            }
         }
 
         function onYouTubeIframeAPIReady() {
@@ -187,23 +248,17 @@
                 height: '100%',
                 width: '100%',
                 videoId: '', 
-                playerVars: { 
-                    'autoplay': 1, 
-                    'controls': 1,
-                    'rel': 0, // מפחית המלצות בסוף
-                    'modestbranding': 1 // מסתיר לוגואים
-                },
+                playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'modestbranding': 1 },
                 events: {
-                    'onReady': connectToRoom, 
+                    'onReady': connectToRoomData, 
                     'onStateChange': onPlayerStateChange
                 }
             });
         }
 
-        function connectToRoom() {
-            // מתחבר רק לנתיב של החדר הספציפי!
-            // rooms/1234/current_song
-            const roomRef = db.ref('rooms/' + currentRoom);
+        function connectToRoomData() {
+            // מאזין לשיר שמתנגן בחדר
+            const roomRef = db.ref(`rooms/${currentRoom}/current_song`);
 
             roomRef.on('value', (snapshot) => {
                 const data = snapshot.val();
@@ -229,7 +284,7 @@
         function onPlayerStateChange(event) {
             if (isSyncing || !currentRoom) return; 
             if (event.data === 1 || event.data === 2) {
-                db.ref('rooms/' + currentRoom).update({ status: event.data });
+                db.ref(`rooms/${currentRoom}/current_song`).update({ status: event.data });
             }
         }
 
@@ -246,8 +301,7 @@
 
                 const video = data.items[0];
 
-                // שולח את השיר לחדר הספציפי ב-Firebase
-                db.ref('rooms/' + currentRoom).set({
+                db.ref(`rooms/${currentRoom}/current_song`).set({
                     videoId: video.id.videoId,
                     title: video.snippet.title,
                     status: 1
@@ -256,11 +310,10 @@
                 document.getElementById('searchQuery').value = "";
 
             } catch (error) {
-                alert("שגיאה");
+                alert("שגיאה בחיפוש");
             }
         }
         
-        // אנטר לחיפוש
         document.getElementById('searchQuery').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') searchAndSync();
         });
