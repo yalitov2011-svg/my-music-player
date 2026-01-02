@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouSync - הנגן המשותף</title>
+    <title>YouSync - סנכרון מלא</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
-        /* --- עיצוב דמוי יוטיוב --- */
+        /* --- עיצוב דמוי יוטיוב (אותו עיצוב יפה מקודם) --- */
         body { 
             background-color: #0f0f0f; 
             color: white; 
@@ -32,9 +32,8 @@
         }
 
         .logo { font-size: 20px; font-weight: bold; display: flex; align-items: center; gap: 5px; }
-        .logo span { color: #FF0000; } /* אדום יוטיוב */
+        .logo span { color: #FF0000; } 
 
-        /* תיבת חיפוש */
         .search-container {
             display: flex;
             flex-grow: 1;
@@ -87,7 +86,7 @@
         }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* --- הגלריה (המאגר) --- */
+        /* גלריה */
         .video-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -97,45 +96,24 @@
             margin: 0 auto;
         }
 
-        .video-card {
-            background: transparent;
-            cursor: pointer;
-            transition: 0.2s;
-        }
+        .video-card { background: transparent; cursor: pointer; transition: 0.2s; }
         .video-card:hover { transform: scale(1.02); }
-
-        .thumbnail {
-            width: 100%;
-            border-radius: 12px;
-            aspect-ratio: 16/9;
-            object-fit: cover;
-            background: #222;
-        }
-
+        .thumbnail { width: 100%; border-radius: 12px; aspect-ratio: 16/9; object-fit: cover; background: #222; }
         .video-info { padding: 10px 5px; text-align: right; }
         .video-title { font-size: 14px; font-weight: bold; margin-bottom: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .channel-name { font-size: 12px; color: #aaa; }
 
-        /* כותרת קטגוריה */
-        .section-title {
-            text-align: right; margin-right: 5%; font-size: 20px; font-weight: bold; margin-top: 10px;
-        }
+        .section-title { text-align: right; margin-right: 5%; font-size: 20px; font-weight: bold; margin-top: 10px; }
 
-        /* באנר סטטוס */
         .status-bar {
             background: #222; padding: 10px; border-radius: 8px; 
             margin: 0 auto 20px auto; max-width: 900px;
             display: flex; justify-content: space-between; align-items: center;
         }
-
-        /* כפתורי פעולה מתחת לנגן */
-        .action-row {
-            display: flex; justify-content: center; gap: 10px; margin-bottom: 30px;
-        }
-        .btn-action {
-            background: #222; border: none; color: white; padding: 8px 16px; 
-            border-radius: 18px; cursor: pointer; font-size: 14px;
-        }
+        
+        /* כפתורי פעולה */
+        .action-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; }
+        .btn-action { background: #222; border: none; color: white; padding: 8px 16px; border-radius: 18px; cursor: pointer; font-size: 14px; }
         .btn-action:hover { background: #333; }
 
     </style>
@@ -176,13 +154,12 @@
         </div>
 
         <div class="action-row">
-            <button class="btn-action" onclick="addToFavorites()">❤️ שמור למועדפים</button>
             <button class="btn-action" onclick="downloadCurrent()">⬇ הורד (MP3)</button>
         </div>
 
         <hr style="border-color: #222; margin-bottom: 20px;">
 
-        <h3 class="section-title" id="galleryTitle">🔥 להיטים חמים בישראל</h3>
+        <h3 class="section-title" id="galleryTitle">🔥 להיטים חמים</h3>
         <div class="video-grid" id="videoGrid">
             <p style="text-align: center; width: 100%;">טוען...</p>
         </div>
@@ -203,7 +180,10 @@
         const db = firebase.database();
         const YOUTUBE_API_KEY = 'AIzaSyAuLutPPSJlZJKkfBrzRNURSibcqkeeA60'; 
 
-        let player, isSyncing = false, currentRoom = null, myName = "";
+        let player;
+        let isSyncing = false; // מונע לופים של עדכונים
+        let currentRoom = null;
+        let myName = "";
         let currentVideoId = "";
 
         // --- כניסה ---
@@ -226,9 +206,9 @@
             document.getElementById('myNameDisplay').innerText = myName;
             
             loadYoutubePlayer();
-            loadHomePage(); // טעינת המאגר הראשוני
+            loadHomePage();
 
-            // חיבור משתמשים
+            // משתמשים
             const userRef = db.ref(`rooms/${code}/users`).push();
             userRef.set({ name: myName });
             userRef.onDisconnect().remove();
@@ -236,94 +216,47 @@
                 document.getElementById('connectedCount').innerText = snap.numChildren();
             });
 
-            // האזנה לשיר מנגן
+            // --- זה הלב של הסנכרון (מקבל פקודות) ---
             db.ref(`rooms/${currentRoom}/current_song`).on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (!data) return;
+                
                 document.getElementById('statusText').innerText = `🎵 ${data.title}`;
                 currentVideoId = data.videoId;
+
+                // 1. אם זה שיר חדש - טען אותו
                 if (player && player.loadVideoById && player.getVideoData().video_id !== data.videoId) {
                     isSyncing = true;
                     player.loadVideoById(data.videoId);
                     setTimeout(() => isSyncing = false, 1500);
                 }
-            });
-        }
 
-        // --- טעינת דף הבית (מאגר) ---
-        async function loadHomePage() {
-            document.getElementById('galleryTitle').innerText = "🔥 להיטים חמים בישראל";
-            // חיפוש כללי של שירים פופולריים בעברית
-            await fetchAndRenderVideos("להיטים ישראלים חדשים 2024 2025");
-        }
+                // 2. סנכרון Play/Pause וזמן (החלק החדש)
+                if (player && player.getPlayerState) {
+                    const playerState = player.getPlayerState();
+                    const serverStatus = data.status; // 1=Play, 2=Pause
+                    const serverTime = data.timestamp || 0;
 
-        // --- חיפוש זמר/שיר ---
-        async function searchVideos() {
-            const query = document.getElementById('searchQuery').value;
-            if (!query) return;
-            document.getElementById('galleryTitle').innerText = `🔎 תוצאות עבור: "${query}"`;
-            await fetchAndRenderVideos(query);
-        }
-        
-        // לחיצה על אנטר בחיפוש
-        document.getElementById('searchQuery').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') searchVideos();
-        });
+                    // חישוב הפרש זמן
+                    const currentTime = player.getCurrentTime();
+                    const timeDiff = Math.abs(currentTime - serverTime);
 
-        // --- מנוע החיפוש והתצוגה (הלב של המערכת) ---
-        async function fetchAndRenderVideos(query) {
-            const grid = document.getElementById('videoGrid');
-            grid.innerHTML = '<p style="text-align:center; width:100%;">מחפש שירים...</p>';
-
-            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=24&q=${encodeURIComponent(query)}&videoEmbeddable=true&key=${YOUTUBE_API_KEY}`;
-            
-            try {
-                const res = await fetch(url);
-                const data = await res.json();
-                
-                grid.innerHTML = ""; // ניקוי
-                
-                if (!data.items || data.items.length === 0) {
-                    grid.innerHTML = "<p>לא נמצאו שירים.</p>";
-                    return;
+                    // אם הפקודה היא PAUSE
+                    if (serverStatus === 2) {
+                        if (playerState !== 2) player.pauseVideo();
+                        // אם הזמן שלי שונה מהזמן שבו עצרו - קפוץ לזמן הנכון
+                        if (timeDiff > 0.5) player.seekTo(serverTime);
+                    }
+                    
+                    // אם הפקודה היא PLAY
+                    if (serverStatus === 1) {
+                        // אם יש פער זמן גדול (מעל 2 שניות) - סנכרן זמן
+                        if (timeDiff > 2) {
+                            player.seekTo(serverTime);
+                        }
+                        if (playerState !== 1 && playerState !== 3) player.playVideo();
+                    }
                 }
-
-                // יצירת הכרטיסיות
-                data.items.forEach(item => {
-                    const videoId = item.id.videoId;
-                    const title = item.snippet.title;
-                    const thumbnail = item.snippet.thumbnails.medium.url;
-                    const channel = item.snippet.channelTitle;
-
-                    const card = document.createElement('div');
-                    card.className = 'video-card';
-                    card.onclick = () => playSelectedVideo(videoId, title); // לחיצה מנגנת
-
-                    card.innerHTML = `
-                        <img src="${thumbnail}" class="thumbnail">
-                        <div class="video-info">
-                            <div class="video-title">${title}</div>
-                            <div class="channel-name">${channel}</div>
-                        </div>
-                    `;
-                    grid.appendChild(card);
-                });
-
-            } catch (e) {
-                console.error(e);
-                grid.innerHTML = "<p>שגיאה בטעינת שירים.</p>";
-            }
-        }
-
-        // --- שליחת הפקודה לנגן (Firebase) ---
-        function playSelectedVideo(videoId, title) {
-            // גלילה למעלה לנגן
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            
-            db.ref(`rooms/${currentRoom}/current_song`).set({
-                videoId: videoId,
-                title: title,
-                status: 1
             });
         }
 
@@ -347,14 +280,92 @@
             });
         }
 
+        // --- שליחת פקודות לשרת (כשאתה לוחץ) ---
         function onPlayerStateChange(event) {
-            // סנכרון Pause/Play
-            if (!isSyncing && currentRoom && (event.data === 1 || event.data === 2)) {
-               // אופציונלי: כאן אפשר להוסיף סנכרון מצב
+            // אם המערכת כרגע מסנכרנת בעצמה - אל תשלח עדכון
+            if (isSyncing || !currentRoom) return;
+
+            // 1=Play, 2=Pause
+            if (event.data === 1 || event.data === 2) {
+                const currentTime = player.getCurrentTime();
+                
+                // עדכון השרת: גם סטטוס וגם זמן מדויק
+                db.ref(`rooms/${currentRoom}/current_song`).update({ 
+                    status: event.data,
+                    timestamp: currentTime
+                });
             }
         }
 
-        // --- הורדה ומועדפים ---
+        // --- גלריה וחיפוש ---
+        async function loadHomePage() {
+            document.getElementById('galleryTitle').innerText = "🔥 להיטים חמים בישראל";
+            await fetchAndRenderVideos("להיטים ישראלים חדשים 2024 2025");
+        }
+
+        async function searchVideos() {
+            const query = document.getElementById('searchQuery').value;
+            if (!query) return;
+            document.getElementById('galleryTitle').innerText = `🔎 תוצאות עבור: "${query}"`;
+            await fetchAndRenderVideos(query);
+        }
+        
+        document.getElementById('searchQuery').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchVideos();
+        });
+
+        async function fetchAndRenderVideos(query) {
+            const grid = document.getElementById('videoGrid');
+            grid.innerHTML = '<p style="text-align:center; width:100%;">מחפש שירים...</p>';
+
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=24&q=${encodeURIComponent(query)}&videoEmbeddable=true&key=${YOUTUBE_API_KEY}`;
+            
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                grid.innerHTML = ""; 
+                
+                if (!data.items || data.items.length === 0) {
+                    grid.innerHTML = "<p>לא נמצאו שירים.</p>";
+                    return;
+                }
+
+                data.items.forEach(item => {
+                    const videoId = item.id.videoId;
+                    const title = item.snippet.title;
+                    const thumbnail = item.snippet.thumbnails.medium.url;
+                    const channel = item.snippet.channelTitle;
+
+                    const card = document.createElement('div');
+                    card.className = 'video-card';
+                    card.onclick = () => playSelectedVideo(videoId, title);
+
+                    card.innerHTML = `
+                        <img src="${thumbnail}" class="thumbnail">
+                        <div class="video-info">
+                            <div class="video-title">${title}</div>
+                            <div class="channel-name">${channel}</div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+
+            } catch (e) { console.error(e); grid.innerHTML = "<p>שגיאה בטעינה.</p>"; }
+        }
+
+        function playSelectedVideo(videoId, title) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // איפוס זמן ל-0 כשבוחרים שיר חדש
+            db.ref(`rooms/${currentRoom}/current_song`).set({
+                videoId: videoId,
+                title: title,
+                status: 1,
+                timestamp: 0
+            });
+        }
+
+        // --- הורדה ---
         async function downloadCurrent() {
             if(!currentVideoId) return alert("אין שיר מנגן");
             const url = `https://${RAPID_API_HOST}/dl?id=${currentVideoId}`;
@@ -365,10 +376,6 @@
                 if(data.link) window.location.href = data.link;
                 else alert("הורדה נכשלה");
             } catch(e) { alert("שגיאה בהורדה"); }
-        }
-
-        function addToFavorites() {
-            alert("השיר נשמר במועדפים! (פיצ'ר בפיתוח)");
         }
 
     </script>
