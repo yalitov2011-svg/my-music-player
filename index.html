@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎵 הנגן המשותף ULTIMATE</title>
+    <title>🎵 הנגן הנקי V8</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -89,8 +89,8 @@
             gap: 5px;
         }
         
-        .dl-btn { background: #FFD700; color: black; border: none; } /* זהב */
-        .playlist-btn { background: #00E5FF; color: black; border: none; } /* תכלת */
+        .dl-btn { background: #FFD700; color: black; border: none; } 
+        .playlist-btn { background: #00E5FF; color: black; border: none; } 
         .fav-btn { background: #e91e63; border: none; }
 
         .info-bar { display: flex; justify-content: center; gap: 15px; margin-bottom: 10px; flex-wrap: wrap; position: relative; }
@@ -129,7 +129,6 @@
         .player-box { width: 100%; max-width: 800px; aspect-ratio: 16/9; background: #000; margin: 20px auto; border-radius: 15px; overflow: hidden; border: 2px solid #333; }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* אנימציית טעינה להורדה */
         #loadingOverlay {
             display: none;
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -146,11 +145,10 @@
     <div id="loadingOverlay">
         <div class="spinner"></div>
         <p id="loadingText" style="margin-top: 15px; font-size: 18px;">מעבד...</p>
-        <p style="font-size: 12px; color: #aaa;">נא לא לסגור את החלון</p>
     </div>
 
     <div id="loginScreen">
-        <h1>🎧 הנגן המשותף</h1>
+        <h1>🎧 הנגן המשותף (ללא מעקב)</h1>
         <div class="box">
             <label>שלב 1: הזדהות</label>
             <input type="text" id="usernameInput" placeholder="השם שלך (חובה)">
@@ -172,7 +170,6 @@
                 👥 מחוברים: <span id="connectedCount" style="margin: 0 5px;">1</span> ▼
             </div>
             <div id="usersListPopup">
-                <div style="font-size:12px; color:gray; margin-bottom:5px; text-align:center;">רשימת משתתפים:</div>
                 <div id="usersListContent"></div>
             </div>
         </div>
@@ -196,7 +193,6 @@
         </div>
 
         <div class="lists-container">
-            
             <div class="list-section" style="border: 1px solid #00E5FF;">
                 <h4 style="border-bottom: 1px solid #00E5FF; padding-bottom: 5px; color: #00E5FF;">📥 פלייליסט להורדה</h4>
                 <div id="downloadList"></div>
@@ -207,7 +203,6 @@
                 <h4 style="border-bottom: 1px solid #e91e63; padding-bottom: 5px; color: #e91e63;">⭐ מועדפים</h4>
                 <div id="favoritesList"></div>
             </div>
-
         </div>
     </div>
 
@@ -265,7 +260,7 @@
             document.getElementById('welcomeMsg').innerText = `שלום, ${myName}`;
             loadYoutubePlayer();
             loadFavorites(); 
-            loadDownloadPlaylist(); // טעינת הפלייליסט
+            loadDownloadPlaylist();
 
             const userRef = db.ref(`rooms/${code}/users`).push();
             userRef.set({ name: myName });
@@ -300,8 +295,19 @@
 
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
-                height: '100%', width: '100%', videoId: '', 
-                playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'modestbranding': 1 },
+                height: '100%', 
+                width: '100%', 
+                videoId: '', 
+                // --- הטריק נגד פרסומות וקוקיז ---
+                host: 'https://www.youtube-nocookie.com', 
+                playerVars: { 
+                    'autoplay': 1, 
+                    'controls': 1, 
+                    'rel': 0, // לא מציג המלצות מערוצים אחרים
+                    'modestbranding': 1, // מסתיר לוגו
+                    'iv_load_policy': 3, // מסתיר הערות על המסך
+                    'playsinline': 1 
+                },
                 events: { 'onReady': connectToRoomData, 'onStateChange': onPlayerStateChange }
             });
         }
@@ -352,16 +358,11 @@
             if (e.key === 'Enter') searchAndSync();
         });
 
-        // ----------------------------------------------------
-        // --- ניהול פלייליסט להורדה ---
-        // ----------------------------------------------------
-        
+        // --- פלייליסט והורדות ---
         function addToDownloadPlaylist() {
             if (!currentSongId) return alert("אין שיר לנגן כרגע");
             let playlist = JSON.parse(localStorage.getItem('dlPlaylist')) || [];
-            // בדיקה כפולה
             if (playlist.some(song => song.id === currentSongId)) return alert("השיר כבר בפלייליסט!");
-            
             playlist.push({ id: currentSongId, title: currentSongTitle });
             localStorage.setItem('dlPlaylist', JSON.stringify(playlist));
             loadDownloadPlaylist();
@@ -395,31 +396,24 @@
         async function downloadAllInPlaylist() {
             let playlist = JSON.parse(localStorage.getItem('dlPlaylist')) || [];
             if (playlist.length === 0) return alert("הפלייליסט ריק!");
-            
-            if(!confirm(`האם אתה בטוח שאתה רוצה להוריד ${playlist.length} שירים? זה ייקח קצת זמן.`)) return;
+            if(!confirm(`האם אתה בטוח שאתה רוצה להוריד ${playlist.length} שירים?`)) return;
 
             const overlay = document.getElementById('loadingOverlay');
             const statusText = document.getElementById('loadingText');
             overlay.style.display = 'flex';
 
-            // לולאה שעוברת על כל השירים
             for (let i = 0; i < playlist.length; i++) {
                 const song = playlist[i];
-                statusText.innerText = `מוריד שיר ${i + 1} מתוך ${playlist.length}:\n${song.title}`;
-                
+                statusText.innerText = `מוריד ${i + 1}/${playlist.length}:\n${song.title}`;
                 try {
-                    await downloadSingleSong(song.id, true); // true = פתיחה בטאב חדש
-                    // המתנה של 3 שניות בין הורדות כדי לא לקבל חסימה
+                    await downloadSingleSong(song.id, true);
                     if (i < playlist.length - 1) {
-                         statusText.innerText += `\n(ממתין 3 שניות...)`;
+                         statusText.innerText += `\n(ממתין...)`;
                          await new Promise(r => setTimeout(r, 3000));
                     }
-                } catch (e) {
-                    console.error("Failed to download", song.title);
-                }
+                } catch (e) { console.error(e); }
             }
-
-            statusText.innerText = "סיימנו! 🎉";
+            statusText.innerText = "סיימנו!";
             setTimeout(() => { overlay.style.display = 'none'; }, 2000);
         }
 
@@ -432,42 +426,25 @@
             });
         }
 
-        // --- ליבת ההורדה (RapidAPI) ---
         async function downloadSingleSong(videoId, isBulk) {
             const url = `https://${RAPID_API_HOST}/dl?id=${videoId}`;
-            const options = {
-                method: 'GET',
-                headers: {
-                    'X-RapidAPI-Key': RAPID_API_KEY,
-                    'X-RapidAPI-Host': RAPID_API_HOST
-                }
-            };
-
+            const options = { method: 'GET', headers: { 'X-RapidAPI-Key': RAPID_API_KEY, 'X-RapidAPI-Host': RAPID_API_HOST } };
             try {
                 const response = await fetch(url, options);
                 const result = await response.json();
-                
                 let downloadLink = result.link || result.url;
-                
                 if (downloadLink) {
-                    if (isBulk) {
-                        window.open(downloadLink, '_blank'); // פתיחה בטאב חדש לרשימה
-                    } else {
-                        window.location.href = downloadLink; // ניווט באותו חלון לבודד
-                    }
-                } else {
-                    console.error("No link found for video", videoId);
+                    if (isBulk) window.open(downloadLink, '_blank');
+                    else window.location.href = downloadLink;
                 }
-            } catch (error) {
-                console.error("API Error", error);
-            }
+            } catch (error) { console.error("API Error", error); }
         }
 
         // --- מועדפים ---
         function addToFavorites() {
-            if (!currentSongId) return alert("אין שיר לנגן כרגע");
+            if (!currentSongId) return alert("אין שיר");
             let favorites = JSON.parse(localStorage.getItem('myFavs')) || [];
-            if (favorites.some(song => song.id === currentSongId)) return alert("השיר הזה כבר במועדפים!");
+            if (favorites.some(song => song.id === currentSongId)) return alert("כבר במועדפים");
             favorites.push({ id: currentSongId, title: currentSongTitle });
             localStorage.setItem('myFavs', JSON.stringify(favorites));
             loadFavorites(); 
@@ -477,17 +454,12 @@
             let favorites = JSON.parse(localStorage.getItem('myFavs')) || [];
             const listDiv = document.getElementById('favoritesList');
             listDiv.innerHTML = "";
-            if (favorites.length === 0) {
-                listDiv.innerHTML = "<p style='font-size:12px; color:#555;'>אין מועדפים</p>";
-                return;
-            }
             favorites.forEach((song, index) => {
                 listDiv.innerHTML += `
                     <div class="list-item">
                         <span onclick="playFav('${song.id}', '${song.title}')">${song.title}</span>
                         <span class="delete-item" onclick="removeFav(${index})">X</span>
-                    </div>
-                `;
+                    </div>`;
             });
         }
 
@@ -499,11 +471,7 @@
         }
 
         function playFav(id, title) {
-            db.ref(`rooms/${currentRoom}/current_song`).set({
-                videoId: id,
-                title: title,
-                status: 1
-            });
+            db.ref(`rooms/${currentRoom}/current_song`).set({ videoId: id, title: title, status: 1 });
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     </script>
