@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎵 הנגן המשותף - מהיר</title>
+    <title>🎵 הנגן המשותף V5 - הורדה ישירה</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -88,8 +88,8 @@
             gap: 5px;
         }
         
-        .dl-btn { background: #222; border: 1px solid #555; }
-        .fav-btn { background: #e91e63; }
+        .dl-btn { background: #00C853; border: none; } /* ירוק להורדה */
+        .fav-btn { background: #e91e63; border: none; }
 
         /* --- תגיות מידע --- */
         .info-bar {
@@ -187,6 +187,7 @@
         <div class="box">
             <label>שלב 1: הזדהות</label>
             <input type="text" id="usernameInput" placeholder="השם שלך (חובה)">
+            
             <hr style="border-color: #333; margin: 20px 0;">
             
             <label>שלב 2: בחר לאן להיכנס</label>
@@ -225,7 +226,7 @@
 
         <div class="action-buttons">
             <button class="action-btn fav-btn" onclick="addToFavorites()">❤️ שמור למועדפים</button>
-            <button class="action-btn dl-btn" onclick="searchDownload()">⬇️ חפש הורדה בגוגל</button>
+            <button class="action-btn dl-btn" onclick="directDownload()">⬇️ הורד שיר זה (ישיר)</button>
         </div>
 
         <div id="favoritesSection">
@@ -256,7 +257,7 @@
         let currentSongTitle = ""; 
         let currentSongId = "";    
 
-        // --- כניסה (ללא מייל) ---
+        // --- כניסה מהירה ---
         function getLoginDetails() {
             const name = document.getElementById('usernameInput').value.trim();
             if (name === "") { alert("חייב לרשום שם!"); return false; }
@@ -286,7 +287,6 @@
             loadYoutubePlayer();
             loadFavorites(); 
 
-            // שומרים רק שם
             const userRef = db.ref(`rooms/${code}/users`).push();
             userRef.set({ name: myName });
             userRef.onDisconnect().remove(); 
@@ -377,17 +377,19 @@
             if (e.key === 'Enter') searchAndSync();
         });
 
-        // --- פונקציות: הורדה ומועדפים ---
-
-        function searchDownload() {
-            if (!currentSongTitle) {
+        // --- פונקציה חדשה: הורדה ישירה ---
+        function directDownload() {
+            if (!currentSongId) {
                 alert("קודם תפעיל שיר!");
                 return;
             }
-            const searchTerm = `download ${currentSongTitle} mp3`;
-            window.open(`https://www.google.com/search?q=${encodeURIComponent(searchTerm)}`, '_blank');
+            // פתיחת אתר המרה ספציפי עם הוידאו כבר בפנים
+            // זה מדלג על החיפוש בגוגל ולוקח אותך ישר להורדה
+            const url = `https://www.y2mate.com/youtube/${currentSongId}`;
+            window.open(url, '_blank');
         }
 
+        // --- מועדפים ---
         function addToFavorites() {
             if (!currentSongId) return alert("אין שיר לנגן כרגע");
             let favorites = JSON.parse(localStorage.getItem('myFavs')) || [];
