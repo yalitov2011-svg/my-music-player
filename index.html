@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouSync - סנכרון מלא</title>
+    <title>YouSync - הנגן המשותף</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
-        /* --- עיצוב דמוי יוטיוב (אותו עיצוב יפה מקודם) --- */
+        /* --- עיצוב דמוי יוטיוב --- */
         body { 
             background-color: #0f0f0f; 
             color: white; 
@@ -31,7 +31,17 @@
             border-bottom: 1px solid #2a2a2a;
         }
 
-        .logo { font-size: 20px; font-weight: bold; display: flex; align-items: center; gap: 5px; }
+        /* --- התיקון ללוגו כאן --- */
+        .logo { 
+            font-size: 20px; 
+            font-weight: bold; 
+            display: flex; 
+            align-items: center; 
+            gap: 5px; 
+            cursor: pointer; /* הופך ליד מצביעה */
+            user-select: none;
+        }
+        .logo:hover { opacity: 0.8; } /* אפקט קטן במעבר עכבר */
         .logo span { color: #FF0000; } 
 
         .search-container {
@@ -121,12 +131,15 @@
 <body>
 
     <div id="navbar" class="navbar" style="display: none;">
-        <div class="logo">▶ <span>YouSync</span></div>
+        <div class="logo" onclick="window.location.reload()" title="חזור להתחלה">
+            ▶ <span>YouSync</span>
+        </div>
+        
         <div class="search-container">
             <input type="text" id="searchQuery" placeholder="חיפוש שירים...">
             <button class="search-btn" onclick="searchVideos()">🔍</button>
         </div>
-        <div class="logo" style="font-size: 14px;">👤 <span id="myNameDisplay"></span></div>
+        <div class="logo" style="font-size: 14px; cursor: default;">👤 <span id="myNameDisplay"></span></div>
     </div>
 
     <div id="loginScreen">
@@ -181,7 +194,7 @@
         const YOUTUBE_API_KEY = 'AIzaSyAuLutPPSJlZJKkfBrzRNURSibcqkeeA60'; 
 
         let player;
-        let isSyncing = false; // מונע לופים של עדכונים
+        let isSyncing = false; 
         let currentRoom = null;
         let myName = "";
         let currentVideoId = "";
@@ -208,7 +221,6 @@
             loadYoutubePlayer();
             loadHomePage();
 
-            // משתמשים
             const userRef = db.ref(`rooms/${code}/users`).push();
             userRef.set({ name: myName });
             userRef.onDisconnect().remove();
@@ -216,7 +228,6 @@
                 document.getElementById('connectedCount').innerText = snap.numChildren();
             });
 
-            // --- זה הלב של הסנכרון (מקבל פקודות) ---
             db.ref(`rooms/${currentRoom}/current_song`).on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (!data) return;
@@ -224,43 +235,31 @@
                 document.getElementById('statusText').innerText = `🎵 ${data.title}`;
                 currentVideoId = data.videoId;
 
-                // 1. אם זה שיר חדש - טען אותו
                 if (player && player.loadVideoById && player.getVideoData().video_id !== data.videoId) {
                     isSyncing = true;
                     player.loadVideoById(data.videoId);
                     setTimeout(() => isSyncing = false, 1500);
                 }
 
-                // 2. סנכרון Play/Pause וזמן (החלק החדש)
                 if (player && player.getPlayerState) {
                     const playerState = player.getPlayerState();
-                    const serverStatus = data.status; // 1=Play, 2=Pause
+                    const serverStatus = data.status;
                     const serverTime = data.timestamp || 0;
-
-                    // חישוב הפרש זמן
                     const currentTime = player.getCurrentTime();
                     const timeDiff = Math.abs(currentTime - serverTime);
 
-                    // אם הפקודה היא PAUSE
                     if (serverStatus === 2) {
                         if (playerState !== 2) player.pauseVideo();
-                        // אם הזמן שלי שונה מהזמן שבו עצרו - קפוץ לזמן הנכון
                         if (timeDiff > 0.5) player.seekTo(serverTime);
                     }
-                    
-                    // אם הפקודה היא PLAY
                     if (serverStatus === 1) {
-                        // אם יש פער זמן גדול (מעל 2 שניות) - סנכרן זמן
-                        if (timeDiff > 2) {
-                            player.seekTo(serverTime);
-                        }
+                        if (timeDiff > 2) player.seekTo(serverTime);
                         if (playerState !== 1 && playerState !== 3) player.playVideo();
                     }
                 }
             });
         }
 
-        // --- נגן יוטיוב ---
         function loadYoutubePlayer() {
             if (typeof YT !== 'undefined' && YT.Player) onYouTubeIframeAPIReady();
             else {
@@ -280,16 +279,10 @@
             });
         }
 
-        // --- שליחת פקודות לשרת (כשאתה לוחץ) ---
         function onPlayerStateChange(event) {
-            // אם המערכת כרגע מסנכרנת בעצמה - אל תשלח עדכון
             if (isSyncing || !currentRoom) return;
-
-            // 1=Play, 2=Pause
             if (event.data === 1 || event.data === 2) {
                 const currentTime = player.getCurrentTime();
-                
-                // עדכון השרת: גם סטטוס וגם זמן מדויק
                 db.ref(`rooms/${currentRoom}/current_song`).update({ 
                     status: event.data,
                     timestamp: currentTime
@@ -297,7 +290,6 @@
             }
         }
 
-        // --- גלריה וחיפוש ---
         async function loadHomePage() {
             document.getElementById('galleryTitle').innerText = "🔥 להיטים חמים בישראל";
             await fetchAndRenderVideos("להיטים ישראלים חדשים 2024 2025");
@@ -355,8 +347,6 @@
 
         function playSelectedVideo(videoId, title) {
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            
-            // איפוס זמן ל-0 כשבוחרים שיר חדש
             db.ref(`rooms/${currentRoom}/current_song`).set({
                 videoId: videoId,
                 title: title,
@@ -365,7 +355,6 @@
             });
         }
 
-        // --- הורדה ---
         async function downloadCurrent() {
             if(!currentVideoId) return alert("אין שיר מנגן");
             const url = `https://${RAPID_API_HOST}/dl?id=${currentVideoId}`;
