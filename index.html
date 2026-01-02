@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎵 הנגן המשותף - פלייליסט חכם</title>
+    <title>🎵 הנגן המשותף V10 - מתוקן</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -224,7 +224,13 @@
             databaseURL: "https://musicsync-58d86-default-rtdb.firebaseio.com"
         };
 
-        firebase.initializeApp(firebaseConfig);
+        // בדיקה שהפיירבייס נטען לפני שמשתמשים בו
+        try {
+            firebase.initializeApp(firebaseConfig);
+        } catch (e) {
+            console.error("Firebase Init Error:", e);
+        }
+
         const db = firebase.database();
         const YOUTUBE_API_KEY = 'AIzaSyAuLutPPSJlZJKkfBrzRNURSibcqkeeA60'; 
 
@@ -236,7 +242,10 @@
 
         // --- כניסה ---
         function getLoginDetails() {
-            const name = document.getElementById('usernameInput').value.trim();
+            const nameInput = document.getElementById('usernameInput');
+            if (!nameInput) return false;
+            
+            const name = nameInput.value.trim();
             if (name === "") { alert("חייב לרשום שם!"); return false; }
             myName = name;
             return true;
@@ -244,6 +253,7 @@
 
         function createRoom() {
             if (!getLoginDetails()) return; 
+            // יצירת חדר חדש
             enterRoom(Math.floor(1000 + Math.random() * 9000));
         }
 
@@ -256,4 +266,222 @@
 
         function enterRoom(code) {
             currentRoom = code;
-            document.getElementById
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('playerScreen').style.display = 'block';
+            document.getElementById('displayRoomCode').innerText = code;
+            document.getElementById('welcomeMsg').innerText = `שלום, ${myName}`;
+            
+            loadYoutubePlayer();
+            
+            // חיבור למשתמשים
+            const userRef = db.ref(`rooms/${code}/users`).push();
+            userRef.set({ name: myName });
+            userRef.onDisconnect().remove(); 
+            
+            db.ref(`rooms/${code}/users`).on('value', (snapshot) => {
+                const usersListDiv = document.getElementById('usersListContent');
+                usersListDiv.innerHTML = ""; 
+                let count = 0;
+                if(snapshot.exists()){
+                    snapshot.forEach((child) => {
+                        const user = child.val();
+                        count++;
+                        usersListDiv.innerHTML += `<div class="user-item"><div>👤 ${user.name}</div></div>`;
+                    });
+                }
+                document.getElementById('connectedCount').innerText = count;
+            });
+
+            // האזנה לתור השירים (Shared Queue)
+            db.ref(`rooms/${code}/queue`).on('value', (snapshot) => {
+                renderQueue(snapshot.val());
+            });
+        }
+
+        function toggleUsersList() {
+            const popup = document.getElementById('usersListPopup');
+            popup.style.display = (popup.style.display === "block") ? "none" : "block";
+        }
+
+        function loadYoutubePlayer() {
+            if (typeof YT !== 'undefined' && YT.Player) onYouTubeIframeAPIReady();
+            else {
+                var tag = document.createElement('script');
+                tag.src = "https://www.youtube.com/iframe_api";
+                var firstScriptTag = document.getElementsByTagName('script')[0];
+                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+            }
+        }
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '100%', 
+                width: '100%', 
+                videoId: '', 
+                host: 'https://www.youtube-nocookie.com', 
+                playerVars: { 
+                    'autoplay': 1, 
+                    'controls': 1, 
+                    'rel': 0, 
+                    'modestbranding': 1, 
+                    'iv_load_policy': 3,
+                    'playsinline': 1 
+                },
+                events: { 'onReady': connectToRoomData, 'onStateChange': onPlayerStateChange }
+            });
+        }
+
+        function connectToRoomData() {
+            db.ref(`rooms/${currentRoom}/current_song`).on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return;
+                document.getElementById('statusText').innerText = `🎵 מנגן: ${data.title}`;
+                currentSongId = data.videoId;
+                if (player.getVideoData().video_id !== data.videoId) {
+                    isSyncing = true;
+                    player.loadVideoById(data.videoId);
+                    player.seekTo(0);
+                    setTimeout(() => isSyncing = false, 1500);
+                }
+                const state = player.getPlayerState();
+                if (data.status === 2 && state !== 2) player.pauseVideo();
+                else if (data.status === 1 && state !== 1 && state !== 3) player.playVideo();
+            });
+        }
+
+        function onPlayerStateChange(event) {
+            if (isSyncing || !currentRoom) return; 
+
+            // עדכון מצב נגן (Play/Pause)
+            if (event.data === 1 || event.data === 2) {
+                db.ref(`rooms/${currentRoom}/current_song`).update({ status: event.data });
+            }
+
+            // --- הקסם: ניגון אוטומטי מהתור כשהשיר נגמר ---
+            if (event.data === 0) { // 0 = ENDED
+                playNextInQueue();
+            }
+        }
+
+        // --- חיפוש שירים (משותף לשתי הפעולות) ---
+        async function fetchVideoData(query) {
+            if (!query) return null;
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=${encodeURIComponent(query + " lyrics")}&videoEmbeddable=true&key=${YOUTUBE_API_KEY}`;
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                if (!data.items || data.items.length === 0) { alert("לא נמצא"); return null; }
+                return data.items[0];
+            } catch (error) { alert("שגיאה בחיפוש"); return null; }
+        }
+
+        // נגן עכשיו (דורס את השיר הנוכחי)
+        async function searchAndPlayNow() {
+            const query = document.getElementById('searchQuery').value;
+            const video = await fetchVideoData(query);
+            if (video) {
+                db.ref(`rooms/${currentRoom}/current_song`).set({
+                    videoId: video.id.videoId, title: video.snippet.title, status: 1
+                });
+                document.getElementById('searchQuery').value = "";
+            }
+        }
+
+        // הוסף לתור (מוסיף לרשימה המשותפת)
+        async function searchAndAddToQueue() {
+            const query = document.getElementById('searchQuery').value;
+            const video = await fetchVideoData(query);
+            if (video) {
+                const songData = {
+                    videoId: video.id.videoId,
+                    title: video.snippet.title,
+                    thumbnail: video.snippet.thumbnails.default.url,
+                    addedBy: myName
+                };
+                // דחיפה לתור ב-Firebase - תיקון משתנה code ל-currentRoom
+                db.ref(`rooms/${currentRoom}/queue`).push(songData);
+                
+                // אנימציה קטנה
+                const btn = document.querySelector('.queue-btn');
+                const originalText = btn.innerText;
+                btn.innerText = "נוסף בהצלחה! ✅";
+                setTimeout(() => btn.innerText = originalText, 2000);
+                document.getElementById('searchQuery').value = "";
+            }
+        }
+
+        // --- ניהול התור ---
+        function renderQueue(queueData) {
+            const listDiv = document.getElementById('sharedQueueList');
+            listDiv.innerHTML = "";
+            
+            if (!queueData) {
+                listDiv.innerHTML = "<p style='color: gray; font-size: 14px;'>התור ריק כרגע...</p>";
+                return;
+            }
+
+            // המרת האובייקט של פיירבייס למערך
+            const songs = Object.entries(queueData);
+            
+            songs.forEach(([key, song], index) => {
+                listDiv.innerHTML += `
+                    <div class="queue-item">
+                        <div style="display:flex; align-items:center;">
+                            <span style="font-weight:bold; color:#9c27b0; margin-left:10px;">${index + 1}.</span>
+                            <div style="text-align:right;">
+                                <div style="font-size:14px; font-weight:bold;">${song.title.substring(0, 40)}...</div>
+                                <div style="font-size:11px; color:#aaa;">נוסף ע"י: ${song.addedBy}</div>
+                            </div>
+                        </div>
+                        <img src="${song.thumbnail}">
+                    </div>
+                `;
+            });
+        }
+
+        function playNextInQueue() {
+            // קריאת התור פעם אחת
+            db.ref(`rooms/${currentRoom}/queue`).once('value', (snapshot) => {
+                const queueData = snapshot.val();
+                if (!queueData) return; // התור ריק
+
+                // לוקח את השיר הראשון
+                const keys = Object.keys(queueData);
+                const firstKey = keys[0];
+                const nextSong = queueData[firstKey];
+
+                // 1. מנגן אותו לכולם
+                db.ref(`rooms/${currentRoom}/current_song`).set({
+                    videoId: nextSong.videoId,
+                    title: nextSong.title,
+                    status: 1
+                });
+
+                // 2. מוחק אותו מהתור כדי שלא יחזור
+                db.ref(`rooms/${currentRoom}/queue/${firstKey}`).remove();
+            });
+        }
+
+        // --- הורדה ---
+        async function downloadCurrentOnly() {
+            if (!currentSongId) return alert("אין שיר לנגן!");
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            document.getElementById('loadingText').innerText = "מכין הורדה...";
+            
+            const url = `https://${RAPID_API_HOST}/dl?id=${currentSongId}`;
+            const options = { method: 'GET', headers: { 'X-RapidAPI-Key': RAPID_API_KEY, 'X-RapidAPI-Host': RAPID_API_HOST } };
+
+            try {
+                const response = await fetch(url, options);
+                const result = await response.json();
+                
+                let downloadLink = result.link || result.url;
+                if (downloadLink) window.location.href = downloadLink;
+                else alert("שירות ההורדות לא הצליח הפעם.");
+            } catch (error) { console.error(error); alert("שגיאה בהתחברות לשירות ההורדות"); }
+            finally { document.getElementById('loadingOverlay').style.display = 'none'; }
+        }
+
+    </script>
+</body>
+</html>
