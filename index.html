@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎵 הנגן החברתי - חדרים</title>
+    <title>🎵 הנגן המשותף V4</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -71,6 +71,26 @@
         .secondary-btn { background: #444; }
         .secondary-btn:hover { background: #666; }
 
+        /* כפתורי פעולה מתחת לנגן */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        
+        .action-btn {
+            padding: 10px 15px;
+            font-size: 14px;
+            width: auto;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .dl-btn { background: #222; border: 1px solid #555; }
+        .fav-btn { background: #e91e63; }
+
         /* --- תגיות מידע --- */
         .info-bar {
             display: flex;
@@ -120,18 +140,32 @@
             transform: translateX(-50%);
         }
 
-        .user-item {
-            padding: 8px;
-            border-bottom: 1px solid #444;
+        .user-item { padding: 8px; border-bottom: 1px solid #444; text-align: right; }
+        .user-item:last-child { border-bottom: none; }
+        .user-email { font-size: 11px; color: #aaa; margin-right: 22px; }
+
+        /* --- רשימת מועדפים --- */
+        #favoritesSection {
+            margin-top: 30px;
+            width: 90%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
             text-align: right;
         }
-        .user-item:last-child { border-bottom: none; }
         
-        .user-email {
-            font-size: 11px;
-            color: #aaa;
-            margin-right: 22px; /* הזחה מתחת לאייקון */
+        .fav-item {
+            background: #1e1e1e;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
         }
+        .fav-item:hover { background: #333; }
+        .delete-fav { color: red; font-weight: bold; padding: 5px 10px; }
 
         /* --- נגן --- */
         .player-box { 
@@ -160,9 +194,7 @@
             
             <label>שלב 2: בחר לאן להיכנס</label>
             <button onclick="createRoom()">✨ צור חדר חדש</button>
-            
             <p style="margin: 10px 0; color: #777;">--- או ---</p>
-            
             <input type="number" id="roomInput" placeholder="קוד חדר (למשל 1234)">
             <button class="secondary-btn" onclick="joinRoom()">🚀 כנס לחדר קיים</button>
         </div>
@@ -173,11 +205,9 @@
         
         <div class="info-bar">
             <div class="badge room-code">קוד חדר: <span id="displayRoomCode">---</span></div>
-            
             <div class="badge user-count" onclick="toggleUsersList()">
                 👥 מחוברים: <span id="connectedCount" style="margin: 0 5px;">1</span> ▼
             </div>
-            
             <div id="usersListPopup">
                 <div style="font-size:12px; color:gray; margin-bottom:5px; text-align:center;">רשימת משתתפים:</div>
                 <div id="usersListContent"></div>
@@ -195,10 +225,19 @@
             <div id="player"></div>
         </div>
         <p id="statusText" style="color: gray;">ממתין לשיר...</p>
+
+        <div class="action-buttons">
+            <button class="action-btn fav-btn" onclick="addToFavorites()">❤️ שמור למועדפים</button>
+            <button class="action-btn dl-btn" onclick="searchDownload()">⬇️ חפש הורדה בגוגל</button>
+        </div>
+
+        <div id="favoritesSection">
+            <h4 style="border-bottom: 1px solid #333; padding-bottom: 5px;">⭐ השירים השמורים שלי</h4>
+            <div id="favoritesList"></div>
+        </div>
     </div>
 
     <script>
-        // --- הגדרות Firebase ---
         const firebaseConfig = {
             apiKey: "AIzaSyDKN3qgnvUP4SZX9aOAaThnDI4vUjjVw9A",
             authDomain: "musicsync-58d86.firebaseapp.com",
@@ -217,19 +256,15 @@
         let isSyncing = false; 
         let currentRoom = null;
         let myName = "";
-        let myEmail = ""; // משתנה לשמירת האימייל
+        let myEmail = "";
+        let currentSongTitle = ""; // לשמירת שם השיר הנוכחי
+        let currentSongId = "";    // לשמירת המזהה הנוכחי
 
-        // --- לוגיקה של כניסה ---
-
+        // --- כניסה ---
         function getLoginDetails() {
             const name = document.getElementById('usernameInput').value.trim();
             const email = document.getElementById('emailInput').value.trim();
-            
-            if (name === "") {
-                alert("חייב לרשום שם לפני שנכנסים! 😡");
-                return false;
-            }
-            
+            if (name === "") { alert("חייב לרשום שם!"); return false; }
             myName = name;
             myEmail = email;
             return true;
@@ -237,86 +272,53 @@
 
         function createRoom() {
             if (!getLoginDetails()) return; 
-
-            const newCode = Math.floor(1000 + Math.random() * 9000);
-            enterRoom(newCode);
+            enterRoom(Math.floor(1000 + Math.random() * 9000));
         }
 
         function joinRoom() {
             if (!getLoginDetails()) return; 
-
             const code = document.getElementById('roomInput').value;
-            if (code.length < 4) {
-                alert("נא להכניס קוד חדר תקין");
-                return;
-            }
+            if (code.length < 4) { alert("קוד שגוי"); return; }
             enterRoom(code);
         }
 
         function enterRoom(code) {
             currentRoom = code;
-            
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('playerScreen').style.display = 'block';
             document.getElementById('displayRoomCode').innerText = code;
             document.getElementById('welcomeMsg').innerText = `שלום, ${myName}`;
             
             loadYoutubePlayer();
+            loadFavorites(); // טעינת המועדפים
 
-            // --- ניהול משתמשים עם אימייל ---
             const userRef = db.ref(`rooms/${code}/users`).push();
-            
-            // שומרים גם שם וגם אימייל
-            userRef.set({ 
-                name: myName,
-                email: myEmail 
-            });
-            
+            userRef.set({ name: myName, email: myEmail });
             userRef.onDisconnect().remove(); 
 
-            // האזנה לרשימת המשתמשים
             db.ref(`rooms/${code}/users`).on('value', (snapshot) => {
                 const usersListDiv = document.getElementById('usersListContent');
                 usersListDiv.innerHTML = ""; 
-                
                 let count = 0;
                 snapshot.forEach((child) => {
                     const user = child.val();
                     count++;
-                    
-                    // בדיקה אם יש אימייל כדי להציג אותו
-                    let emailHtml = "";
-                    if (user.email) {
-                        emailHtml = `<div class="user-email">${user.email}</div>`;
-                    }
-
-                    usersListDiv.innerHTML += `
-                        <div class="user-item">
-                            <div>👤 ${user.name}</div>
-                            ${emailHtml}
-                        </div>
-                    `;
+                    let emailHtml = user.email ? `<div class="user-email">${user.email}</div>` : "";
+                    usersListDiv.innerHTML += `<div class="user-item"><div>👤 ${user.name}</div>${emailHtml}</div>`;
                 });
-
                 document.getElementById('connectedCount').innerText = count;
             });
         }
 
         function toggleUsersList() {
             const popup = document.getElementById('usersListPopup');
-            if (popup.style.display === "none" || popup.style.display === "") {
-                popup.style.display = "block";
-            } else {
-                popup.style.display = "none";
-            }
+            popup.style.display = (popup.style.display === "block") ? "none" : "block";
         }
 
-        // --- נגן וסנכרון ---
-
+        // --- נגן ---
         function loadYoutubePlayer() {
-            if (typeof YT !== 'undefined' && YT.Player) {
-                onYouTubeIframeAPIReady();
-            } else {
+            if (typeof YT !== 'undefined' && YT.Player) onYouTubeIframeAPIReady();
+            else {
                 var tag = document.createElement('script');
                 tag.src = "https://www.youtube.com/iframe_api";
                 var firstScriptTag = document.getElementsByTagName('script')[0];
@@ -326,25 +328,20 @@
 
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
-                height: '100%',
-                width: '100%',
-                videoId: '', 
+                height: '100%', width: '100%', videoId: '', 
                 playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'modestbranding': 1 },
-                events: {
-                    'onReady': connectToRoomData, 
-                    'onStateChange': onPlayerStateChange
-                }
+                events: { 'onReady': connectToRoomData, 'onStateChange': onPlayerStateChange }
             });
         }
 
         function connectToRoomData() {
-            const roomRef = db.ref(`rooms/${currentRoom}/current_song`);
-
-            roomRef.on('value', (snapshot) => {
+            db.ref(`rooms/${currentRoom}/current_song`).on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (!data) return;
 
                 document.getElementById('statusText').innerText = `מנגן: ${data.title}`;
+                currentSongTitle = data.title; // שמירה לשימוש המועדפים
+                currentSongId = data.videoId;
 
                 if (player.getVideoData().video_id !== data.videoId) {
                     isSyncing = true;
@@ -369,32 +366,7 @@
         async function searchAndSync() {
             const query = document.getElementById('searchQuery').value;
             if (!query) return;
-
             const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=${encodeURIComponent(query + " lyrics")}&videoEmbeddable=true&key=${YOUTUBE_API_KEY}`;
-            
             try {
                 const res = await fetch(url);
                 const data = await res.json();
-                if (!data.items || data.items.length === 0) return alert("לא נמצא");
-
-                const video = data.items[0];
-
-                db.ref(`rooms/${currentRoom}/current_song`).set({
-                    videoId: video.id.videoId,
-                    title: video.snippet.title,
-                    status: 1
-                });
-                
-                document.getElementById('searchQuery').value = "";
-
-            } catch (error) {
-                alert("שגיאה בחיפוש");
-            }
-        }
-        
-        document.getElementById('searchQuery').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') searchAndSync();
-        });
-    </script>
-</body>
-</html>
