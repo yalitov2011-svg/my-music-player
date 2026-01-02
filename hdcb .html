@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>נגן עוקף חסימות</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        /* תיבת חיפוש */
+        .search-box {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            width: 250px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: none;
+            background: #e62117; /* YouTube Red */
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover { background: #bf1b13; }
+
+        /* נגן */
+        .video-wrapper {
+            width: 100%;
+            max-width: 640px;
+            aspect-ratio: 16/9;
+            background: #000;
+            margin-bottom: 20px;
+            border: 2px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* רשימת שירים */
+        .list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+            max-width: 640px;
+        }
+
+        .item {
+            display: flex;
+            gap: 10px;
+            background: #1e1e1e;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .item:hover { background: #333; }
+
+        .item img {
+            width: 120px;
+            height: 68px;
+            object-fit: cover;
+        }
+
+        .item-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .item-title { font-weight: bold; font-size: 14px; }
+        .item-channel { font-size: 12px; color: #aaa; margin-top: 5px; }
+
+    </style>
+</head>
+<body>
+
+    <h2>🎵 נגן מוזיקה (גרסה פתוחה)</h2>
+
+    <div class="search-box">
+        <input type="text" id="query" placeholder="חפש שיר...">
+        <button onclick="search()">חפש</button>
+    </div>
+
+    <div class="video-wrapper" id="player">
+        <p style="color: gray;">בחר שיר לניגון</p>
+    </div>
+
+    <div class="list" id="results"></div>
+
+    <script>
+        // המפתח שלך
+        const KEY = 'AIzaSyAuLutPPSJlZJKkfBrzRNURSibcqkeeA60';
+
+        async function search() {
+            let q = document.getElementById('query').value;
+            if (!q) return;
+
+            // --- הטריק: חיפוש מילים (Lyrics) ---
+            // זה מוצא גרסאות שהן לא הקליפ הרשמי החסום
+            let finalQuery = q + " lyrics"; 
+
+            let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=10&q=${encodeURIComponent(finalQuery)}&videoEmbeddable=true&key=${KEY}`;
+
+            try {
+                let response = await fetch(url);
+                let data = await response.json();
+
+                if (data.error) {
+                    alert("שגיאה: " + data.error.message);
+                    return;
+                }
+
+                showResults(data.items);
+            } catch (e) {
+                alert("שגיאת רשת");
+            }
+        }
+
+        function showResults(videos) {
+            let container = document.getElementById('results');
+            container.innerHTML = ""; // ניקוי
+
+            videos.forEach(v => {
+                let title = v.snippet.title;
+                let id = v.id.videoId;
+                let img = v.snippet.thumbnails.medium.url;
+                let channel = v.snippet.channelTitle;
+
+                let div = document.createElement('div');
+                div.className = 'item';
+                div.onclick = () => play(id); // לחיצה מפעילה
+
+                div.innerHTML = `
+                    <img src="${img}">
+                    <div class="item-info">
+                        <div class="item-title">${title}</div>
+                        <div class="item-channel">${channel}</div>
+                    </div>
+                `;
+
+                container.appendChild(div);
+            });
+        }
+
+        function play(id) {
+            // שינוי הנגן לכתובת Embed רגילה בלי אוטומציה מסובכת
+            // הסרתי את autoplay=1 כי דפדפנים לפעמים חוסמים את זה
+            document.getElementById('player').innerHTML = `
+                <iframe 
+                    src="https://www.youtube.com/embed/${id}?rel=0&modestbranding=1" 
+                    allowfullscreen>
+                </iframe>
+            `;
+            // גלילה לנגן
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // חיפוש באנטר
+        document.getElementById('query').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') search();
+        });
+
+    </script>
+
+</body>
+</html>
