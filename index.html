@@ -78,7 +78,7 @@
             gap: 15px;
             margin-bottom: 10px;
             flex-wrap: wrap;
-            position: relative; /* בשביל התפריט הנפתח */
+            position: relative; 
         }
 
         .badge {
@@ -96,7 +96,6 @@
         
         .room-code { color: #00ff00; border-color: #00ff00; }
         
-        /* עיצוב כפתור המשתמשים */
         .user-count { 
             color: #00ccff; 
             border-color: #00ccff; 
@@ -107,14 +106,14 @@
 
         /* --- רשימת שמות נפתחת --- */
         #usersListPopup {
-            display: none; /* מוסתר בהתחלה */
+            display: none; 
             position: absolute;
-            top: 50px; /* מתחת לתגיות */
+            top: 50px; 
             background: #222;
             border: 1px solid #00ccff;
             border-radius: 10px;
             padding: 10px;
-            width: 200px;
+            width: 220px;
             z-index: 100;
             box-shadow: 0 5px 20px rgba(0,0,0,0.8);
             left: 50%;
@@ -122,11 +121,17 @@
         }
 
         .user-item {
-            padding: 5px;
+            padding: 8px;
             border-bottom: 1px solid #444;
-            font-size: 16px;
+            text-align: right;
         }
         .user-item:last-child { border-bottom: none; }
+        
+        .user-email {
+            font-size: 11px;
+            color: #aaa;
+            margin-right: 22px; /* הזחה מתחת לאייקון */
+        }
 
         /* --- נגן --- */
         .player-box { 
@@ -147,8 +152,9 @@
     <div id="loginScreen">
         <h1>🎧 הנגן המשותף</h1>
         <div class="box">
-            <label>שלב 1: הכנס את השם שלך</label>
-            <input type="text" id="usernameInput" placeholder="השם שלך (חובה!)">
+            <label>שלב 1: הזדהות</label>
+            <input type="text" id="usernameInput" placeholder="השם שלך (חובה)">
+            <input type="email" id="emailInput" placeholder="האימייל שלך (לא חובה)">
             
             <hr style="border-color: #333; margin: 20px 0;">
             
@@ -173,7 +179,7 @@
             </div>
             
             <div id="usersListPopup">
-                <div style="font-size:12px; color:gray; margin-bottom:5px;">רשימת משתתפים:</div>
+                <div style="font-size:12px; color:gray; margin-bottom:5px; text-align:center;">רשימת משתתפים:</div>
                 <div id="usersListContent"></div>
             </div>
         </div>
@@ -211,29 +217,33 @@
         let isSyncing = false; 
         let currentRoom = null;
         let myName = "";
+        let myEmail = ""; // משתנה לשמירת האימייל
 
         // --- לוגיקה של כניסה ---
 
-        function checkName() {
+        function getLoginDetails() {
             const name = document.getElementById('usernameInput').value.trim();
+            const email = document.getElementById('emailInput').value.trim();
+            
             if (name === "") {
                 alert("חייב לרשום שם לפני שנכנסים! 😡");
-                return null;
+                return false;
             }
-            return name;
+            
+            myName = name;
+            myEmail = email;
+            return true;
         }
 
         function createRoom() {
-            myName = checkName();
-            if (!myName) return; 
+            if (!getLoginDetails()) return; 
 
             const newCode = Math.floor(1000 + Math.random() * 9000);
             enterRoom(newCode);
         }
 
         function joinRoom() {
-            myName = checkName();
-            if (!myName) return; 
+            if (!getLoginDetails()) return; 
 
             const code = document.getElementById('roomInput').value;
             if (code.length < 4) {
@@ -253,29 +263,45 @@
             
             loadYoutubePlayer();
 
-            // --- ניהול משתמשים ---
+            // --- ניהול משתמשים עם אימייל ---
             const userRef = db.ref(`rooms/${code}/users`).push();
-            userRef.set({ name: myName });
-            userRef.onDisconnect().remove(); // מחיקה ביציאה
+            
+            // שומרים גם שם וגם אימייל
+            userRef.set({ 
+                name: myName,
+                email: myEmail 
+            });
+            
+            userRef.onDisconnect().remove(); 
 
-            // האזנה לרשימת המשתמשים (כמות + שמות)
+            // האזנה לרשימת המשתמשים
             db.ref(`rooms/${code}/users`).on('value', (snapshot) => {
                 const usersListDiv = document.getElementById('usersListContent');
-                usersListDiv.innerHTML = ""; // ניקוי הרשימה
+                usersListDiv.innerHTML = ""; 
                 
                 let count = 0;
                 snapshot.forEach((child) => {
                     const user = child.val();
                     count++;
-                    // הוספת שם לרשימה
-                    usersListDiv.innerHTML += `<div class="user-item">👤 ${user.name}</div>`;
+                    
+                    // בדיקה אם יש אימייל כדי להציג אותו
+                    let emailHtml = "";
+                    if (user.email) {
+                        emailHtml = `<div class="user-email">${user.email}</div>`;
+                    }
+
+                    usersListDiv.innerHTML += `
+                        <div class="user-item">
+                            <div>👤 ${user.name}</div>
+                            ${emailHtml}
+                        </div>
+                    `;
                 });
 
                 document.getElementById('connectedCount').innerText = count;
             });
         }
 
-        // --- פונקציה להצגה/הסתרה של הרשימה ---
         function toggleUsersList() {
             const popup = document.getElementById('usersListPopup');
             if (popup.style.display === "none" || popup.style.display === "") {
