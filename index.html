@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎵 הנגן המשותף V7 - חלון צף</title>
+    <title>🎵 הנגן המשותף PRO</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -88,99 +88,51 @@
             gap: 5px;
         }
         
-        .dl-btn { background: #00C853; border: none; }
+        .dl-btn { background: #FFD700; color: black; border: none; } /* זהב - פרימיום */
         .fav-btn { background: #e91e63; border: none; }
 
-        /* --- תגיות מידע --- */
-        .info-bar {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
-            position: relative; 
-        }
-
-        .badge {
-            background: #333;
-            padding: 8px 20px;
-            border-radius: 20px;
-            font-family: monospace;
-            font-size: 18px;
-            border: 1px solid #555;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            user-select: none;
-        }
-        
+        .info-bar { display: flex; justify-content: center; gap: 15px; margin-bottom: 10px; flex-wrap: wrap; position: relative; }
+        .badge { background: #333; padding: 8px 20px; border-radius: 20px; font-family: monospace; font-size: 18px; border: 1px solid #555; display: flex; align-items: center; gap: 10px; user-select: none; }
         .room-code { color: #00ff00; border-color: #00ff00; }
         .user-count { color: #00ccff; border-color: #00ccff; cursor: pointer; }
 
-        /* --- רשימת משתמשים --- */
-        #usersListPopup {
-            display: none; 
-            position: absolute;
-            top: 50px; 
-            background: #222;
-            border: 1px solid #00ccff;
-            border-radius: 10px;
-            padding: 10px;
-            width: 220px;
-            z-index: 100;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.8);
-            left: 50%;
-            transform: translateX(-50%);
-        }
+        #usersListPopup { display: none; position: absolute; top: 50px; background: #222; border: 1px solid #00ccff; border-radius: 10px; padding: 10px; width: 220px; z-index: 100; box-shadow: 0 5px 20px rgba(0,0,0,0.8); left: 50%; transform: translateX(-50%); }
         .user-item { padding: 8px; border-bottom: 1px solid #444; text-align: right; }
         .user-item:last-child { border-bottom: none; }
 
-        /* --- מועדפים --- */
-        #favoritesSection {
-            margin-top: 30px;
-            width: 90%;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-            text-align: right;
-        }
-        .fav-item {
-            background: #1e1e1e;
-            padding: 10px;
-            margin-bottom: 5px;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-        }
+        #favoritesSection { margin-top: 30px; width: 90%; max-width: 600px; margin-left: auto; margin-right: auto; text-align: right; }
+        .fav-item { background: #1e1e1e; padding: 10px; margin-bottom: 5px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .fav-item:hover { background: #333; }
         .delete-fav { color: red; font-weight: bold; padding: 5px 10px; }
 
-        /* --- נגן --- */
-        .player-box { 
-            width: 100%; max-width: 800px; 
-            aspect-ratio: 16/9; 
-            background: #000; 
-            margin: 20px auto; 
-            border-radius: 15px; 
-            overflow: hidden; 
-            border: 2px solid #333;
-        }
+        .player-box { width: 100%; max-width: 800px; aspect-ratio: 16/9; background: #000; margin: 20px auto; border-radius: 15px; overflow: hidden; border: 2px solid #333; }
         iframe { width: 100%; height: 100%; border: none; }
+
+        /* אנימציית טעינה להורדה */
+        #loadingOverlay {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 9999;
+            justify-content: center; align-items: center; flex-direction: column;
+        }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #FFD700; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
     </style>
 </head>
 <body>
+
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <p style="margin-top: 15px;">מכין את ההורדה... (פרימיום)</p>
+    </div>
 
     <div id="loginScreen">
         <h1>🎧 הנגן המשותף</h1>
         <div class="box">
             <label>שלב 1: הזדהות</label>
             <input type="text" id="usernameInput" placeholder="השם שלך (חובה)">
-            
             <hr style="border-color: #333; margin: 20px 0;">
-            
             <label>שלב 2: בחר לאן להיכנס</label>
             <button onclick="createRoom()">✨ צור חדר חדש</button>
             <p style="margin: 10px 0; color: #777;">--- או ---</p>
@@ -217,7 +169,7 @@
 
         <div class="action-buttons">
             <button class="action-btn fav-btn" onclick="addToFavorites()">❤️ שמור למועדפים</button>
-            <button class="action-btn dl-btn" onclick="openPopupDownload()">⬇️ הורדה בחלון צף</button>
+            <button class="action-btn dl-btn" onclick="downloadPremium()">💎 הורדה מהירה (PRO)</button>
         </div>
 
         <div id="favoritesSection">
@@ -227,6 +179,14 @@
     </div>
 
     <script>
+        // ----------------------------------------------------
+        // כאן הכנסתי את המפתח ששלחת לי בתמונה!
+        const RAPID_API_KEY = 'efb1ed4f48msh5dfd6650699ded0p1f5775jsn2c2c0eb8bbb3';
+        
+        // כאן הנחתי שבחרת ב-API הנפוץ ביותר. אם לא עובד - תגיד לי.
+        const RAPID_API_HOST = 'youtube-mp36.p.rapidapi.com'; 
+        // ----------------------------------------------------
+
         const firebaseConfig = {
             apiKey: "AIzaSyDKN3qgnvUP4SZX9aOAaThnDI4vUjjVw9A",
             authDomain: "musicsync-58d86.firebaseapp.com",
@@ -274,14 +234,11 @@
             document.getElementById('playerScreen').style.display = 'block';
             document.getElementById('displayRoomCode').innerText = code;
             document.getElementById('welcomeMsg').innerText = `שלום, ${myName}`;
-            
             loadYoutubePlayer();
             loadFavorites(); 
-
             const userRef = db.ref(`rooms/${code}/users`).push();
             userRef.set({ name: myName });
             userRef.onDisconnect().remove(); 
-
             db.ref(`rooms/${code}/users`).on('value', (snapshot) => {
                 const usersListDiv = document.getElementById('usersListContent');
                 usersListDiv.innerHTML = ""; 
@@ -300,7 +257,6 @@
             popup.style.display = (popup.style.display === "block") ? "none" : "block";
         }
 
-        // --- נגן ---
         function loadYoutubePlayer() {
             if (typeof YT !== 'undefined' && YT.Player) onYouTubeIframeAPIReady();
             else {
@@ -323,18 +279,15 @@
             db.ref(`rooms/${currentRoom}/current_song`).on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (!data) return;
-
                 document.getElementById('statusText').innerText = `מנגן: ${data.title}`;
                 currentSongTitle = data.title; 
                 currentSongId = data.videoId;
-
                 if (player.getVideoData().video_id !== data.videoId) {
                     isSyncing = true;
                     player.loadVideoById(data.videoId);
                     player.seekTo(0);
                     setTimeout(() => isSyncing = false, 1500);
                 }
-
                 const state = player.getPlayerState();
                 if (data.status === 2 && state !== 2) player.pauseVideo();
                 else if (data.status === 1 && state !== 1 && state !== 3) player.playVideo();
@@ -368,30 +321,48 @@
             if (e.key === 'Enter') searchAndSync();
         });
 
-        // --- הורדה בחלון צף (Smart Popup) ---
-        function openPopupDownload() {
-            if (!currentSongId) {
-                alert("קודם תפעיל שיר!");
-                return;
+        // --- פונקציית הורדת פרימיום (RAPIDAPI) ---
+        async function downloadPremium() {
+            if (!currentSongId) return alert("אין שיר לנגן!");
+            
+            document.getElementById('loadingOverlay').style.display = 'flex';
+
+            const url = `https://${RAPID_API_HOST}/dl?id=${currentSongId}`;
+            const options = {
+                method: 'GET',
+                headers: {
+                    'X-RapidAPI-Key': RAPID_API_KEY,
+                    'X-RapidAPI-Host': RAPID_API_HOST
+                }
+            };
+
+            try {
+                const response = await fetch(url, options);
+                const result = await response.json();
+                
+                // בדיקת התשובה מה-API
+                if (result.link) {
+                    window.location.href = result.link; 
+                } else if (result.url) {
+                    window.location.href = result.url;
+                } else if (result.status === 'fail' || result.msg) {
+                     alert("שגיאה מהשרת: " + (result.msg || "לא הצליח"));
+                } else {
+                    alert("השירות לא החזיר לינק תקין. נסה שיר אחר או בדוק את ה-API.");
+                }
+            } catch (error) {
+                console.error(error);
+                alert("שגיאה בחיבור! ייתכן שבחרת API שונה ממה שהגדרתי בקוד (YouTube MP3).");
+            } finally {
+                document.getElementById('loadingOverlay').style.display = 'none';
             }
-            
-            // פתיחת חלון קטן וממוקד - זה עוקף את החסימה!
-            const url = `https://www.y2mate.com/youtube/${currentSongId}`;
-            const width = 800;
-            const height = 600;
-            const left = (screen.width - width) / 2;
-            const top = (screen.height - height) / 2;
-            
-            window.open(url, 'DownloadWindow', `width=${width},height=${height},top=${top},left=${left},scrollbars=yes`);
         }
 
         // --- מועדפים ---
         function addToFavorites() {
             if (!currentSongId) return alert("אין שיר לנגן כרגע");
             let favorites = JSON.parse(localStorage.getItem('myFavs')) || [];
-            if (favorites.some(song => song.id === currentSongId)) {
-                return alert("השיר הזה כבר במועדפים!");
-            }
+            if (favorites.some(song => song.id === currentSongId)) return alert("השיר הזה כבר במועדפים!");
             favorites.push({ id: currentSongId, title: currentSongTitle });
             localStorage.setItem('myFavs', JSON.stringify(favorites));
             loadFavorites(); 
