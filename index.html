@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>YouSync V24 - Mobile Perfect</title>
+    <title>YouSync V25 - Advanced Settings</title>
     
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -26,11 +26,12 @@
             color: white; 
             font-family: 'Segoe UI', system-ui, sans-serif; 
             margin: 0; padding: 0;
-            height: 100vh; /* שימוש ב-vh רגיל ליציבות */
+            height: 100vh;
             width: 100vw;
-            overflow: hidden; /* מונע גלילה של כל העמוד */
+            overflow: hidden;
             display: flex;
             flex-direction: column;
+            transition: background-color 0.5s;
         }
 
         /* --- מסך כניסה --- */
@@ -62,19 +63,25 @@
             height: 100%;
             width: 100%;
             position: relative;
-            /* במחשב: גריד 3 עמודות */
             grid-template-columns: 260px 1fr 320px; 
             grid-template-rows: 1fr 90px;
         }
 
-        /* --- צד ימין (תפריט - מוסתר בטלפון) --- */
+        /* --- צד ימין (תפריט) --- */
         .sidebar {
             background: #000; border-left: 1px solid var(--border);
-            padding: 20px; display: flex; flex-direction: column;
+            padding: 20px; display: flex; flex-direction: column; gap: 15px;
         }
-        .brand { font-size: 22px; font-weight: 800; color: white; margin-bottom: 20px; }
+        .brand { font-size: 22px; font-weight: 800; color: white; margin-bottom: 10px; }
         .brand span { color: var(--primary); }
         
+        .nav-btn {
+            background: transparent; border: none; color: #b3b3b3; text-align: right; font-size: 15px;
+            padding: 10px; cursor: pointer; display: flex; align-items: center; gap: 12px; border-radius: 8px;
+            font-weight: 600; transition: 0.2s;
+        }
+        .nav-btn:hover { background: #282828; color: white; }
+
         .user-list-container { flex: 1; overflow-y: auto; }
         .user-row { padding: 8px; font-size: 14px; color: #ddd; display: flex; align-items: center; gap: 8px;}
 
@@ -82,13 +89,20 @@
         .main-content {
             background: linear-gradient(180deg, #1a1a1a 0%, var(--panel) 40%);
             position: relative; 
-            overflow-y: auto; /* גלילה רק כאן */
+            overflow-y: auto; 
             padding: 20px;
             display: flex; flex-direction: column; align-items: center;
-            grid-column: 2; /* במחשב */
+            grid-column: 2;
         }
 
-        .search-container { width: 100%; max-width: 600px; margin-bottom: 20px; position: relative; }
+        /* אפקט זוהר לרקע */
+        .ambiance-glow {
+            position: absolute; top: 0; left: 0; width: 100%; height: 300px;
+            background: radial-gradient(circle at top, var(--primary), transparent 70%);
+            opacity: 0.15; pointer-events: none; transition: opacity 0.5s;
+        }
+
+        .search-container { width: 100%; max-width: 600px; margin-bottom: 20px; position: relative; z-index: 10; }
         .search-input {
             width: 100%; padding: 12px 40px 12px 15px; background: #2a2a2a; border: none; 
             border-radius: 50px; color: white; outline: none; font-size: 16px;
@@ -102,10 +116,10 @@
         }
         iframe { width: 100%; height: 100%; border: none; }
 
-        .results-header { width: 100%; max-width: 900px; display: flex; justify-content: space-between; margin-bottom: 15px; }
+        .results-header { width: 100%; max-width: 900px; display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center; }
         .results-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;
-            width: 100%; max-width: 900px; padding-bottom: 120px; /* רווח לנגן למטה */
+            width: 100%; max-width: 900px; padding-bottom: 120px;
         }
         .video-card { background: #181818; padding: 10px; border-radius: 10px; cursor: pointer; }
         .card-img { width: 100%; border-radius: 6px; aspect-ratio: 16/9; object-fit: cover; }
@@ -115,7 +129,7 @@
             background: #333; color: white; border: none; padding: 10px 25px; border-radius: 20px; margin-top: 20px;
         }
 
-        /* --- צ'אט (במחשב בצד, בטלפון פופ-אפ) --- */
+        /* --- צ'אט --- */
         .chat-panel {
             background: var(--dark); border-right: 1px solid var(--border);
             display: flex; flex-direction: column; overflow: hidden;
@@ -127,8 +141,6 @@
         .msg strong { color: var(--primary); display: block; font-size: 11px; }
         .chat-input-area { padding: 10px; display: flex; gap: 8px; background: #111; border-top: 1px solid #333; }
         #chatInput { flex: 1; background: #333; border: none; padding: 10px; border-radius: 20px; color: white; outline: none; }
-
-        /* כפתור סגירת צ'אט (רק לנייד) */
         .mobile-close-chat { display: none; background: none; border: none; color: white; font-size: 20px; }
 
         /* --- נגן תחתון --- */
@@ -155,63 +167,44 @@
 
         .player-right { width: 25%; display: flex; justify-content: flex-end; gap: 15px; }
 
-        /* ========================================= */
-        /* === התאמה לטלפון (החלק החשוב!) === */
-        /* ========================================= */
+        /* --- חלון הגדרות משודרג --- */
+        #settingsModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 4000; align-items: center; justify-content: center;
+        }
+        .settings-content {
+            background: #222; padding: 25px; border-radius: 16px; width: 90%; max-width: 350px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.7); max-height: 80vh; overflow-y: auto;
+        }
+        .settings-section { margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        .settings-section h4 { margin: 0 0 10px 0; color: #ccc; font-size: 14px; }
+        
+        .color-option { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: inline-block; margin: 3px; border: 2px solid transparent; }
+        .color-option:hover { transform: scale(1.1); }
+
+        .toggle-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        /* --- התאמה לטלפון --- */
         @media (max-width: 768px) {
-            #appScreen {
-                display: flex; flex-direction: column;
-            }
-
-            .sidebar { display: none; } /* אין צד ימין בטלפון */
-
-            .main-content {
-                flex: 1; width: 100%; padding: 10px;
-                overflow-y: auto; /* רק האזור הזה נגלל */
-            }
-
-            .video-wrapper {
-                position: sticky; top: 0; z-index: 10;
-                margin-bottom: 15px;
-                box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            }
-
-            /* צ'אט כחלון קופץ מלא בטלפון */
-            .chat-panel {
-                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                z-index: 2500; /* מעל הכל */
-                transform: translateY(100%); /* מוסתר למטה */
-                transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-                border: none;
-            }
-            .chat-panel.open { transform: translateY(0); } /* נפתח */
-            .mobile-close-chat { display: block; } /* הצג כפתור סגירה */
-
-            /* נגן תחתון בטלפון */
-            .bottom-bar {
-                height: 110px; /* גבוה יותר */
-                flex-direction: column;
-                justify-content: center;
-                padding: 10px;
-                background: rgba(20,20,20,0.95);
-                backdrop-filter: blur(10px);
-            }
-            
-            .now-playing { display: none; } /* חוסך מקום */
+            #appScreen { display: flex; flex-direction: column; }
+            .sidebar { display: none; } 
+            .main-content { flex: 1; width: 100%; padding: 10px; overflow-y: auto; }
+            .video-wrapper { position: sticky; top: 0; z-index: 10; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+            .chat-panel { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2500; transform: translateY(100%); transition: transform 0.3s; border: none; }
+            .chat-panel.open { transform: translateY(0); }
+            .mobile-close-chat { display: block; }
+            .bottom-bar { height: 110px; flex-direction: column; justify-content: center; padding: 10px; background: rgba(20,20,20,0.95); backdrop-filter: blur(10px); }
+            .now-playing { display: none; }
             .player-center { width: 100%; }
             .controls { margin-bottom: 10px; gap: 30px; }
-            
-            .player-right {
-                position: absolute;
-                top: 15px; right: 15px;
-                width: auto;
-            }
-            
-            .toggle-chat-btn {
-                color: var(--primary);
-                background: rgba(255,255,255,0.1);
-                border-radius: 50%; width: 40px; height: 40px;
-            }
+            .player-right { position: absolute; top: 15px; right: 15px; width: auto; }
+            .toggle-chat-btn { color: var(--primary); background: rgba(255,255,255,0.1); border-radius: 50%; width: 40px; height: 40px; }
         }
 
         .toast {
@@ -226,9 +219,49 @@
 
     <div id="toast" class="toast"></div>
 
+    <!-- חלון הגדרות -->
+    <div id="settingsModal" onclick="if(event.target === this) toggleSettings()">
+        <div class="settings-content">
+            <h3 style="margin-top:0;">⚙️ הגדרות</h3>
+            
+            <div class="settings-section">
+                <h4>🎨 צבע נושא</h4>
+                <div id="colorOptions">
+                    <div class="color-option" style="background:#1DB954" onclick="setTheme('#1DB954')"></div>
+                    <div class="color-option" style="background:#1E88E5" onclick="setTheme('#1E88E5')"></div>
+                    <div class="color-option" style="background:#E91E63" onclick="setTheme('#E91E63')"></div>
+                    <div class="color-option" style="background:#9C27B0" onclick="setTheme('#9C27B0')"></div>
+                    <div class="color-option" style="background:#FF9800" onclick="setTheme('#FF9800')"></div>
+                    <div class="color-option" style="background:#00E5FF" onclick="setTheme('#00E5FF')"></div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h4>👤 שם משתמש</h4>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="newUsernameInput" placeholder="שם חדש..." style="flex:1; padding:8px; border-radius:5px; border:1px solid #444; background:#333; color:white; outline:none;">
+                    <button onclick="updateUsername()" style="background:var(--primary); border:none; border-radius:5px; cursor:pointer; padding:0 15px; font-weight:bold;">שמור</button>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h4>⚡ ביצועים</h4>
+                <div class="toggle-row">
+                    <span>אנימציות רקע (Glow)</span>
+                    <label class="switch">
+                        <input type="checkbox" id="animToggle" checked onchange="toggleAnimations(this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <button class="btn-grad" style="padding:10px; margin-top:10px;" onclick="toggleSettings()">סגור</button>
+        </div>
+    </div>
+
     <!-- כניסה -->
     <div id="loginScreen">
-        <h1 style="color:white; font-size: 38px; margin-bottom: 25px;">You<span style="color:var(--primary)">Sync</span> Mobile</h1>
+        <h1 style="color:white; font-size: 38px; margin-bottom: 25px;">You<span style="color:var(--primary)">Sync</span> V25</h1>
         <div class="login-card">
             <input type="text" id="usernameInput" class="auth-input" placeholder="שם משתמש">
             <button class="btn-grad" onclick="createRoom()">צור חדר</button>
@@ -244,13 +277,16 @@
         <!-- סרגל צד (רק במחשב) -->
         <div class="sidebar">
             <div class="brand">You<span>Sync</span></div>
-            <div style="font-size:12px; color:#aaa; margin-bottom:10px;">מחוברים (<span id="userCount">0</span>)</div>
+            <button class="nav-btn" onclick="toggleSettings()"><i class="fas fa-cog"></i> הגדרות</button>
+            <div style="font-size:12px; color:#aaa; margin-top:20px; margin-bottom:5px;">מחוברים (<span id="userCount">0</span>)</div>
             <div id="usersList" class="user-list-container"></div>
             <div style="margin-top:auto; font-size:12px; color:#555;">חדר: <span id="roomCodeDisplay"></span></div>
         </div>
 
         <!-- תוכן ראשי -->
         <div class="main-content">
+            <div class="ambiance-glow" id="ambianceGlow"></div>
+
             <div class="search-container">
                 <input type="text" id="searchInput" class="search-input" placeholder="חפש שיר, אמן או אלבום...">
                 <i class="fas fa-search search-icon"></i>
@@ -271,10 +307,10 @@
             </div>
         </div>
 
-        <!-- צ'אט (בטלפון הוא נפתח מלמטה) -->
+        <!-- צ'אט -->
         <div class="chat-panel" id="chatPanel">
             <div class="chat-header">
-                <span>💬 צ'אט קבוצתי</span>
+                <span>💬 צ'אט</span>
                 <button class="mobile-close-chat" onclick="toggleChat()"><i class="fas fa-times"></i></button>
             </div>
             <div id="chatMessages" class="chat-messages"></div>
@@ -308,7 +344,6 @@
             </div>
 
             <div class="player-right">
-                <!-- כפתור לפתיחת הצ'אט בטלפון -->
                 <button class="ctrl-btn toggle-chat-btn" onclick="toggleChat()">
                     <i class="fas fa-comment-alt"></i>
                 </button>
@@ -334,14 +369,46 @@
         try { firebase.initializeApp(firebaseConfig); } catch(e){}
         const db = firebase.database();
 
-        let player, isSyncing = false, currentRoom = null, myName = "";
+        let player, isSyncing = false, currentRoom = null, myName = "", myKey = "";
         let isDragging = false, currentVideoId = "", nextPageToken = "";
         let currentSearchQuery = "להיטים ישראלים 2025";
 
         window.onload = function() {
             const params = new URLSearchParams(window.location.search);
             if (params.get('room')) document.getElementById('roomInput').value = params.get('room');
+            
+            // טעינת הגדרות שמורות
+            const savedTheme = localStorage.getItem('themeColor');
+            if(savedTheme) setTheme(savedTheme);
         };
+
+        // --- הגדרות ---
+        function toggleSettings() {
+            const modal = document.getElementById('settingsModal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function setTheme(color) {
+            document.documentElement.style.setProperty('--primary', color);
+            const glow = document.getElementById('ambianceGlow');
+            if(glow) glow.style.background = `radial-gradient(circle at top, ${color}, transparent 70%)`;
+            localStorage.setItem('themeColor', color);
+        }
+
+        function updateUsername() {
+            const newName = document.getElementById('newUsernameInput').value.trim();
+            if(newName && myKey) {
+                db.ref(`rooms/${currentRoom}/users/${myKey}`).update({ name: newName });
+                myName = newName;
+                showToast("שם עודכן בהצלחה!");
+                toggleSettings();
+            }
+        }
+
+        function toggleAnimations(enabled) {
+            const glow = document.getElementById('ambianceGlow');
+            if(glow) glow.style.display = enabled ? 'block' : 'none';
+        }
 
         // --- פתיחה/סגירה של צ'אט בנייד ---
         function toggleChat() {
@@ -361,12 +428,10 @@
 
         function enterRoom(code) {
             currentRoom = code;
-            // עדכון URL לשיתוף
             const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?room=' + code;
             window.history.pushState({path:newUrl},'',newUrl);
 
             document.getElementById('loginScreen').style.display = 'none';
-            // שימוש ב-flex במקום grid בטלפון
             const app = document.getElementById('appScreen');
             app.style.display = (window.innerWidth > 768) ? 'grid' : 'flex';
             document.getElementById('roomCodeDisplay').innerText = code;
@@ -375,6 +440,7 @@
             loadHomePage(); 
 
             const userRef = db.ref(`rooms/${code}/users`).push();
+            myKey = userRef.key;
             userRef.set({ name: myName });
             userRef.onDisconnect().remove();
 
