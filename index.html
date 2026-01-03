@@ -4,45 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- === SEO ותגיות לגוגל (חדש!) === -->
-    <title>YouSync - נגן מוזיקה חברתי משותף</title>
-    <meta name="description" content="האזן למוזיקה יחד עם חברים בזמן אמת! נגן YouSync מאפשר ליצור חדרי מוזיקה, לשתף שירים, להוריד שירים ולשוחח בצ'אט בחינם.">
-    <meta name="keywords" content="מוזיקה, נגן משותף, יוטיוב, ספוטיפיי, מוזיקה בחינם, חדרים, שמיעה ביחד, הורדת שירים, MP3">
-    <meta name="author" content="YouSync">
-    
-    <!-- תצוגה יפה כששולחים בוואטסאפ (Open Graph) -->
-    <meta property="og:title" content="YouSync - בואו לשמוע מוזיקה ביחד 🎧">
-    <meta property="og:description" content="הצטרף לחדר שלי! שומעים מוזיקה, מדברים ומורידים שירים בחינם.">
-    <meta property="og:image" content="https://cdn-icons-png.flaticon.com/512/3669/3669986.png"> 
-    <meta property="og:url" content="https://yalitov2011-svg.github.io/my-music-player/">
-    <meta property="og:type" content="website">
+    <!-- SEO -->
+    <title>YouSync Pro - חווית מוזיקה מתקדמת</title>
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="נגן מוזיקה חברתי מתקדם. האזן, שתף ודבר עם חברים בזמן אמת.">
 
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <!-- אייקונים -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <style>
         :root {
-            --primary: #1DB954;
-            --dark: #000000;
+            --primary: #1DB954; /* צבע דינמי */
+            --dark: #090909;
             --panel: #121212;
-            --border: #333;
+            --border: #282828;
+            --glass: rgba(255, 255, 255, 0.08);
         }
 
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
 
         body { 
             background-color: var(--dark);
             color: white; 
-            font-family: 'Segoe UI', sans-serif; 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
             margin: 0; padding: 0;
             height: 100dvh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            transition: background-color 0.5s;
         }
+
+        /* גלילה יפה */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
 
         /* --- מסך כניסה --- */
         #loginScreen {
@@ -52,163 +51,208 @@
             z-index: 2000;
         }
         .login-card {
-            background: rgba(20,20,20,0.9); padding: 40px; border-radius: 20px; width: 90%; max-width: 350px; text-align: center;
-            border: 1px solid var(--border);
+            background: rgba(30,30,30,0.6); backdrop-filter: blur(20px);
+            padding: 40px; border-radius: 24px; width: 90%; max-width: 380px; text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
         }
         input.auth-input {
-            width: 100%; padding: 15px; margin: 10px 0; border-radius: 30px; border: 1px solid #333; 
-            background: #222; color: white; outline: none; text-align: center; font-size: 16px;
+            width: 100%; padding: 16px; margin: 12px 0; border-radius: 12px; border: 1px solid #333; 
+            background: rgba(0,0,0,0.3); color: white; outline: none; text-align: center; font-size: 16px;
+            transition: 0.3s;
         }
+        input.auth-input:focus { border-color: var(--primary); background: rgba(0,0,0,0.5); }
+        
         .btn-grad {
-            background: var(--primary); border: none; color: black; font-weight: bold; padding: 15px; width: 100%; border-radius: 30px;
-            cursor: pointer; font-size: 16px; margin-top: 10px;
+            background: linear-gradient(135deg, var(--primary), #1aa34a); 
+            border: none; color: black; font-weight: 700; padding: 16px; width: 100%; border-radius: 12px;
+            cursor: pointer; font-size: 16px; margin-top: 15px; box-shadow: 0 4px 15px rgba(29, 185, 84, 0.3);
+            transition: 0.2s;
         }
+        .btn-grad:active { transform: scale(0.98); }
 
-        /* --- לייאאוט --- */
+        /* --- אפליקציה --- */
         #appScreen {
             display: none;
             flex: 1;
             display: grid;
-            grid-template-columns: 250px 1fr 320px;
+            grid-template-columns: 260px 1fr 340px;
             grid-template-rows: 1fr 90px;
             height: 100%;
             overflow: hidden;
         }
 
-        body.chat-hidden #appScreen {
-            grid-template-columns: 250px 1fr 0px;
-        }
+        body.chat-hidden #appScreen { grid-template-columns: 260px 1fr 0px; }
 
-        /* --- סרגל צד --- */
+        /* --- צד ימין (תפריט) --- */
         .sidebar {
-            background: var(--dark); border-left: 1px solid var(--border);
-            padding: 20px; overflow-y: auto; display: flex; flex-direction: column;
+            background: #000; border-left: 1px solid var(--border);
+            padding: 20px; display: flex; flex-direction: column; gap: 20px;
         }
+        .brand { font-size: 22px; font-weight: 800; display: flex; align-items: center; gap: 10px; color: white; }
+        .brand span { color: var(--primary); }
+        
+        .nav-btn {
+            background: transparent; border: none; color: #b3b3b3; text-align: right; font-size: 15px;
+            padding: 10px; cursor: pointer; display: flex; align-items: center; gap: 12px; border-radius: 8px;
+            font-weight: 600; transition: 0.2s;
+        }
+        .nav-btn:hover, .nav-btn.active { background: #282828; color: white; }
+        .nav-btn.active { color: var(--primary); }
+
+        .user-list-container { flex: 1; overflow-y: auto; }
         .user-row {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px; background: #1a1a1a; margin-bottom: 5px; border-radius: 8px; font-size: 13px;
+            display: flex; align-items: center; gap: 10px; padding: 8px; 
+            font-size: 14px; color: #ddd; border-radius: 6px;
+        }
+        .user-row:hover { background: #1a1a1a; }
+        .avatar-circle {
+            width: 28px; height: 28px; background: #333; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--primary);
         }
 
-        /* --- תוכן ראשי --- */
+        /* --- מרכז (תוכן) --- */
         .main-content {
-            background: var(--panel);
-            position: relative;
-            overflow-y: auto;
-            padding: 20px;
+            background: linear-gradient(180deg, #1a1a1a 0%, var(--panel) 40%);
+            position: relative; overflow-y: auto; padding: 30px;
             display: flex; flex-direction: column; align-items: center;
         }
 
+        /* אפקט זוהר לרקע הנגן */
+        .ambiance-glow {
+            position: absolute; top: 0; left: 0; width: 100%; height: 300px;
+            background: radial-gradient(circle at top, var(--primary), transparent 70%);
+            opacity: 0.15; pointer-events: none; transition: opacity 1s, background 1s;
+        }
+
         .search-container {
-            width: 100%; max-width: 600px; margin-bottom: 20px; position: relative;
+            width: 100%; max-width: 600px; margin-bottom: 30px; position: relative; z-index: 10;
         }
         .search-input {
-            width: 100%; padding: 12px 40px 12px 15px; background: #2a2a2a; border: none; border-radius: 30px; color: white; outline: none;
+            width: 100%; padding: 14px 45px 14px 20px; background: #2a2a2a; border: 1px solid transparent; 
+            border-radius: 50px; color: white; outline: none; font-size: 15px; transition: 0.2s;
         }
-        .search-icon { position: absolute; right: 15px; top: 12px; color: #aaa; }
+        .search-input:focus { background: #333; border-color: #555; box-shadow: 0 0 0 2px rgba(255,255,255,0.1); }
+        .search-icon { position: absolute; right: 20px; top: 15px; color: #888; }
 
         .video-wrapper {
             width: 100%; max-width: 800px; aspect-ratio: 16/9;
-            background: black; border-radius: 12px; overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background: black; border-radius: 16px; overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); z-index: 5;
+            position: relative;
         }
         iframe { width: 100%; height: 100%; border: none; }
 
+        .results-header { width: 100%; max-width: 900px; display: flex; justify-content: space-between; margin: 30px 0 15px 0; align-items: center; }
+        
         .results-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px;
-            width: 100%; max-width: 900px; margin-top: 20px; padding-bottom: 20px;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px;
+            width: 100%; max-width: 900px; padding-bottom: 100px;
         }
-        .video-card { cursor: pointer; transition: 0.2s; background: #1a1a1a; padding: 8px; border-radius: 8px; }
-        .video-card:hover { background: #252525; }
-        .card-img { width: 100%; border-radius: 6px; aspect-ratio: 16/9; object-fit: cover; }
-        .card-title { font-size: 12px; margin-top: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-
-        /* כפתור טען עוד */
-        .load-more-container {
-            width: 100%; max-width: 900px; text-align: center; padding-bottom: 50px;
+        .video-card {
+            background: #181818; padding: 12px; border-radius: 10px; cursor: pointer; transition: 0.3s;
+            border: 1px solid transparent;
         }
-        .btn-load-more {
-            background: #333; color: white; border: 1px solid #555; padding: 10px 30px; border-radius: 20px; cursor: pointer;
-        }
-        .btn-load-more:hover { background: #444; border-color: white; }
+        .video-card:hover { background: #282828; transform: translateY(-5px); border-color: #333; }
+        .card-img { width: 100%; border-radius: 6px; aspect-ratio: 16/9; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .card-title { font-size: 13px; font-weight: 600; margin-top: 10px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .card-artist { font-size: 12px; color: #888; margin-top: 4px; }
 
         /* --- צ'אט --- */
         .chat-panel {
             background: var(--dark); border-right: 1px solid var(--border);
-            display: flex; flex-direction: column; overflow: hidden;
-            transition: width 0.3s ease;
+            display: flex; flex-direction: column; overflow: hidden; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         body.chat-hidden .chat-panel { width: 0; padding: 0; border: none; }
 
-        .chat-header { padding: 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
-        .chat-messages { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-        .msg { background: #2a2a2a; padding: 8px 12px; border-radius: 10px; font-size: 13px; align-self: flex-start; max-width: 90%; word-break: break-word; }
-        .chat-input-area { padding: 10px; border-top: 1px solid var(--border); display: flex; gap: 5px; }
+        .chat-header { padding: 20px; border-bottom: 1px solid var(--border); font-weight: bold; display: flex; justify-content: space-between; background: #050505; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: #0a0a0a; }
+        .msg { background: #222; padding: 10px 14px; border-radius: 12px; border-bottom-right-radius: 2px; font-size: 13px; align-self: flex-start; max-width: 85%; line-height: 1.4; animation: fadeIn 0.2s; }
+        .msg strong { color: var(--primary); font-size: 11px; display: block; margin-bottom: 3px; }
+        .chat-input-area { padding: 15px; border-top: 1px solid var(--border); display: flex; gap: 8px; background: #050505; }
         
         /* --- נגן תחתון --- */
         .bottom-bar {
             grid-column: 1 / -1;
             background: #181818; border-top: 1px solid #333;
             display: flex; align-items: center; justify-content: space-between;
-            padding: 0 20px; z-index: 1000;
+            padding: 0 25px; z-index: 1000;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.3);
         }
 
-        .now-playing { display: flex; align-items: center; gap: 10px; width: 25%; overflow: hidden; }
-        .np-info div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .now-playing { display: flex; align-items: center; gap: 15px; width: 25%; }
+        .np-thumb { width: 56px; height: 56px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+        .np-info div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
 
-        .player-center { width: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .player-center { width: 45%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
         
+        /* סליידרים (זמן + ווליום) */
         input[type=range] {
-            -webkit-appearance: none; width: 100%; background: transparent; cursor: pointer; margin-top: 5px;
+            -webkit-appearance: none; width: 100%; background: transparent; cursor: pointer; height: 15px;
         }
         input[type=range]::-webkit-slider-runnable-track {
-            width: 100%; height: 4px; cursor: pointer; background: #444; border-radius: 2px;
+            width: 100%; height: 4px; background: #4a4a4a; border-radius: 2px;
         }
         input[type=range]::-webkit-slider-thumb {
-            height: 12px; width: 12px; border-radius: 50%; background: white; cursor: pointer; -webkit-appearance: none; margin-top: -4px;
+            height: 12px; width: 12px; border-radius: 50%; background: white; -webkit-appearance: none; margin-top: -4px; opacity: 0; transition: 0.2s;
         }
+        input[type=range]:hover::-webkit-slider-thumb { opacity: 1; transform: scale(1.2); }
         
-        .controls { display: flex; gap: 20px; align-items: center; }
-        .ctrl-btn { background: none; border: none; color: #b3b3b3; font-size: 20px; cursor: pointer; }
-        .ctrl-btn.play { color: white; font-size: 35px; }
+        .controls { display: flex; gap: 25px; align-items: center; }
+        .ctrl-btn { background: none; border: none; color: #b3b3b3; font-size: 18px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        .ctrl-btn:hover { color: white; transform: scale(1.1); }
+        .ctrl-btn.play { 
+            background: white; color: black; border-radius: 50%; width: 35px; height: 35px; font-size: 16px; box-shadow: 0 2px 10px rgba(255,255,255,0.2);
+        }
+        .ctrl-btn.play:hover { transform: scale(1.05); background: #eee; }
 
-        .player-right { width: 25%; display: flex; justify-content: flex-end; gap: 15px; }
+        .player-right { width: 25%; display: flex; justify-content: flex-end; align-items: center; gap: 15px; }
+        
+        /* סליידר ווליום */
+        .volume-container { display: flex; align-items: center; gap: 8px; width: 100px; }
+        .volume-slider { flex: 1; }
 
         /* --- התאמה לטלפון --- */
         @media (max-width: 768px) {
-            #appScreen {
-                grid-template-columns: 1fr;
-                grid-template-rows: 1fr 120px; 
-                display: flex; flex-direction: column;
-            }
-
-            .sidebar { display: none; } 
-            
-            .main-content { padding: 10px; height: 60%; }
-            .video-wrapper { position: sticky; top: 0; z-index: 10; margin-bottom: 10px; }
-
-            .chat-panel { 
-                height: 40%; border-top: 1px solid var(--border); border-right: none;
-            }
+            #appScreen { grid-template-columns: 1fr; grid-template-rows: 1fr 130px; }
+            .sidebar { display: none; }
+            .main-content { padding: 15px; height: 60%; }
+            .video-wrapper { position: sticky; top: 0; z-index: 20; margin-bottom: 15px; }
+            .chat-panel { height: 40%; border-top: 1px solid var(--border); border-right: none; }
             body.chat-hidden .chat-panel { height: 0; }
-
-            .bottom-bar {
-                height: 80px; padding: 0 10px;
+            .bottom-bar { 
+                height: 90px; padding: 10px 15px; flex-direction: column; gap: 10px;
                 position: fixed; bottom: 0; left: 0; width: 100%;
-                background: rgba(24, 24, 24, 0.95);
-                backdrop-filter: blur(10px);
+                background: rgba(20,20,20,0.98); backdrop-filter: blur(10px);
             }
-            
-            .now-playing { display: none; } 
-            .player-center { width: 100%; }
-            .player-right { position: absolute; right: 10px; top: 15px; width: auto; }
-            .toggle-chat-btn { color: var(--primary); }
+            .now-playing { width: 100%; justify-content: flex-start; }
+            .np-thumb { width: 40px; height: 40px; }
+            .player-center { width: 100%; flex-direction: row; justify-content: space-between; }
+            .progress-container { position: absolute; bottom: 62px; left: 0; width: 100%; padding: 0 15px; }
+            .player-right { position: absolute; top: 15px; right: 15px; width: auto; }
+            .volume-container { display: none; } /* נסתיר ווליום בטלפון */
         }
+
+        /* --- חלון הגדרות --- */
+        #settingsModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 3000; align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: #222; padding: 30px; border-radius: 16px; width: 300px; text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .color-option { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: inline-block; margin: 5px; border: 2px solid transparent; }
+        .color-option.selected { border-color: white; transform: scale(1.1); }
 
         .toast {
-            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px;
+            position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
+            background: rgba(30,30,30,0.9); color: white; padding: 10px 24px; border-radius: 50px;
             font-size: 14px; pointer-events: none; opacity: 0; transition: opacity 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 5000; font-weight: 600;
         }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
     </style>
 </head>
@@ -216,13 +260,29 @@
 
     <div id="toast" class="toast"></div>
 
+    <!-- חלון הגדרות -->
+    <div id="settingsModal" onclick="if(event.target === this) toggleSettings()">
+        <div class="modal-content">
+            <h3>🎨 בחר צבע נושא</h3>
+            <div id="colorOptions">
+                <div class="color-option" style="background:#1DB954" onclick="setTheme('#1DB954')"></div>
+                <div class="color-option" style="background:#1E88E5" onclick="setTheme('#1E88E5')"></div>
+                <div class="color-option" style="background:#E91E63" onclick="setTheme('#E91E63')"></div>
+                <div class="color-option" style="background:#9C27B0" onclick="setTheme('#9C27B0')"></div>
+                <div class="color-option" style="background:#FF9800" onclick="setTheme('#FF9800')"></div>
+                <div class="color-option" style="background:#00E5FF" onclick="setTheme('#00E5FF')"></div>
+            </div>
+            <button class="btn-grad" style="margin-top:20px; padding:10px;" onclick="toggleSettings()">סגור</button>
+        </div>
+    </div>
+
     <!-- כניסה -->
     <div id="loginScreen">
-        <h1 style="color:white; font-size: 35px; margin-bottom: 20px;">You<span style="color:var(--primary)">Sync</span></h1>
+        <h1 style="color:white; font-size: 38px; margin-bottom: 25px; letter-spacing: -1px;">You<span style="color:var(--primary)">Sync</span> Pro</h1>
         <div class="login-card">
             <input type="text" id="usernameInput" class="auth-input" placeholder="שם משתמש">
             <button class="btn-grad" onclick="createRoom()">צור חדר</button>
-            <p style="margin: 10px 0; color: #777;">או</p>
+            <p style="margin: 15px 0; color: #666; font-size: 14px;">או</p>
             <input type="number" id="roomInput" class="auth-input" placeholder="קוד חדר">
             <button class="btn-grad" style="background: #333; color: white;" onclick="joinRoom()">הצטרף</button>
         </div>
@@ -231,14 +291,26 @@
     <!-- אפליקציה -->
     <div id="appScreen" style="display:none;">
         
+        <!-- סרגל צד -->
         <div class="sidebar">
-            <h3 style="color:var(--primary); margin-top:0;">חדר: <span id="roomCodeDisplay"></span></h3>
-            <div id="usersList"></div>
+            <div class="brand">You<span>Sync</span></div>
+            
+            <button class="nav-btn active" onclick="loadHomePage()"><i class="fas fa-home"></i> בית</button>
+            <button class="nav-btn" onclick="toggleSettings()"><i class="fas fa-cog"></i> הגדרות עיצוב</button>
+            
+            <div style="flex:1;"></div> <!-- מרווח -->
+            
+            <div style="font-size: 12px; color: #666; text-transform: uppercase; font-weight: bold; margin-bottom: 10px;">מחוברים (<span id="userCount">0</span>)</div>
+            <div id="usersList" class="user-list-container"></div>
+            
+            <div style="font-size: 12px; color: #444; margin-top: 10px;">חדר: <span id="roomCodeDisplay" style="color:var(--primary)"></span></div>
         </div>
 
         <div class="main-content">
+            <div class="ambiance-glow" id="ambianceGlow"></div>
+
             <div class="search-container">
-                <input type="text" id="searchInput" class="search-input" placeholder="חפש שיר...">
+                <input type="text" id="searchInput" class="search-input" placeholder="חפש שיר, אמן או אלבום...">
                 <i class="fas fa-search search-icon"></i>
             </div>
 
@@ -248,44 +320,45 @@
 
             <div class="results-header">
                 <h3 style="margin:0;">🔥 להיטים חמים</h3>
-                <button onclick="loadHomePage()" style="background:none; border:none; color:var(--primary); cursor:pointer;">🔄 רענן</button>
+                <button onclick="loadHomePage()" style="background:none; border:none; color:var(--primary); cursor:pointer;"><i class="fas fa-sync-alt"></i></button>
             </div>
             <div id="resultsGrid" class="results-grid"></div>
             
-            <!-- כפתור אינסוף שירים -->
-            <div class="load-more-container">
-                <button class="btn-load-more" onclick="loadMoreVideos()">⬇ טען עוד שירים</button>
+            <div class="load-more-container" style="margin-top: 20px; text-align: center;">
+                <button class="btn-load-more" onclick="loadMoreVideos()" style="background:#222; color:white; border:1px solid #444; padding:10px 25px; border-radius:20px; cursor:pointer;">⬇ עוד שירים</button>
             </div>
         </div>
 
         <div class="chat-panel">
             <div class="chat-header">
-                <span>💬 צ'אט</span>
-                <span style="font-size:12px; color:#aaa;">מחוברים: <span id="userCount">0</span></span>
+                <span>💬 צ'אט קבוצתי</span>
             </div>
             <div id="chatMessages" class="chat-messages"></div>
             <div class="chat-input-area">
-                <input type="text" id="chatInput" style="flex:1; background:#333; border:none; color:white; padding:8px; border-radius:20px; outline:none;" placeholder="הודעה...">
-                <button onclick="sendMessage()" style="background:var(--primary); border:none; border-radius:50%; width:32px; height:32px;">➤</button>
+                <input type="text" id="chatInput" style="flex:1; background:#222; border:none; color:white; padding:10px; border-radius:20px; outline:none; font-size:14px;" placeholder="כתוב הודעה...">
+                <button onclick="sendMessage()" style="background:var(--primary); border:none; border-radius:50%; width:36px; height:36px; color:black; cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
 
         <div class="bottom-bar">
             <div class="now-playing">
-                <img id="npThumb" src="https://via.placeholder.com/50" style="width:40px; height:40px; border-radius:4px;">
+                <img id="npThumb" src="https://via.placeholder.com/56" class="np-thumb">
                 <div class="np-info">
-                    <div id="npTitle" style="font-size:13px; font-weight:bold;">לא מנגן</div>
-                    <div id="npArtist" style="font-size:11px; color:#aaa;">YouSync</div>
+                    <div id="npTitle" style="font-size:14px; font-weight:bold;">לא מנגן</div>
+                    <div id="npArtist" style="font-size:12px; color:#aaa;">YouSync</div>
                 </div>
+                <i class="far fa-heart" style="color:#aaa; cursor:pointer; margin-right:10px;" onclick="showToast('❤️ נשמר')"></i>
             </div>
 
             <div class="player-center">
                 <div class="controls">
-                    <button class="ctrl-btn" onclick="sendReaction('🔥')">🔥</button>
+                    <button class="ctrl-btn" onclick="sendReaction('🔥')"><i class="fas fa-fire"></i></button>
+                    <button class="ctrl-btn" onclick="seekRelative(-10)"><i class="fas fa-step-backward"></i></button>
                     <button class="ctrl-btn play" onclick="togglePlay()"><i class="fas fa-play" id="playIcon"></i></button>
-                    <button class="ctrl-btn" onclick="sendReaction('❤️')">❤️</button>
+                    <button class="ctrl-btn" onclick="seekRelative(10)"><i class="fas fa-step-forward"></i></button>
+                    <button class="ctrl-btn" onclick="sendReaction('😂')"><i class="far fa-laugh"></i></button>
                 </div>
-                <div style="width:100%; display:flex; align-items:center; gap:10px; font-size:11px; color:#aaa;">
+                <div class="progress-container" style="width:100%; display:flex; align-items:center; gap:10px; font-size:11px; color:#aaa;">
                     <span id="currTime">0:00</span>
                     <input type="range" id="seekBar" value="0" min="0" max="100" step="1" oninput="onSeekInput()" onchange="onSeekChange()">
                     <span id="durTime">0:00</span>
@@ -293,10 +366,15 @@
             </div>
 
             <div class="player-right">
-                <button class="ctrl-btn toggle-chat-btn" onclick="toggleChat()" title="הסתר/הצג צ'אט">
+                <div class="volume-container">
+                    <i class="fas fa-volume-up" style="font-size:14px; color:#aaa;"></i>
+                    <input type="range" class="volume-slider" min="0" max="100" value="100" oninput="setVolume(this.value)">
+                </div>
+                <div style="width:1px; height:20px; background:#333; margin:0 10px;"></div>
+                <button class="ctrl-btn toggle-chat-btn" onclick="toggleChat()" title="צ'אט">
                     <i class="fas fa-comment-alt"></i>
                 </button>
-                <button class="ctrl-btn" id="dlBtn" onclick="downloadCurrent()" title="הורדה">
+                <button class="ctrl-btn" onclick="downloadCurrent()" title="הורדה">
                     <i class="fas fa-download"></i>
                 </button>
             </div>
@@ -321,52 +399,42 @@
         let player, isSyncing = false, currentRoom = null, myName = "", myKey = "";
         let isDragging = false; 
         let currentVideoId = "";
-        
         let nextPageToken = "";
         let currentSearchQuery = "להיטים ישראלים 2025";
 
         window.onload = function() {
             const params = new URLSearchParams(window.location.search);
-            const roomParam = params.get('room');
-            if (roomParam) {
-                document.getElementById('roomInput').value = roomParam;
-            }
+            if (params.get('room')) document.getElementById('roomInput').value = params.get('room');
+            
+            // טעינת צבע שמור
+            const savedTheme = localStorage.getItem('themeColor');
+            if(savedTheme) setTheme(savedTheme);
         };
 
+        // --- פונקציות עיצוב ---
+        function toggleSettings() {
+            const modal = document.getElementById('settingsModal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function setTheme(color) {
+            document.documentElement.style.setProperty('--primary', color);
+            document.querySelector('.ambiance-glow').style.background = `radial-gradient(circle at top, ${color}, transparent 70%)`;
+            localStorage.setItem('themeColor', color);
+        }
+
+        // --- מקלדת ---
         document.addEventListener('keydown', function(event) {
             if (document.activeElement.tagName === 'INPUT') return;
             const code = event.code;
-            if (code === 'Space') {
-                event.preventDefault(); togglePlay();
-                showToast(player && player.getPlayerState() === 1 ? '⏸ הושהה' : '▶ מנגן');
-            }
-            else if (code === 'ArrowRight') { event.preventDefault(); seekRelative(10); showToast('⏩ +10 שניות'); }
-            else if (code === 'ArrowLeft') { event.preventDefault(); seekRelative(-10); showToast('⏪ -10 שניות'); }
+            if (code === 'Space') { event.preventDefault(); togglePlay(); showToast(player && player.getPlayerState() === 1 ? '⏸ הושהה' : '▶ מנגן'); }
+            else if (code === 'ArrowRight') { event.preventDefault(); seekRelative(10); showToast('⏩ +10s'); }
+            else if (code === 'ArrowLeft') { event.preventDefault(); seekRelative(-10); showToast('⏪ -10s'); }
             else if (code === 'ArrowUp') { event.preventDefault(); changeVolume(10); }
             else if (code === 'ArrowDown') { event.preventDefault(); changeVolume(-10); }
-            else if (code === 'KeyM') { if(player) { if(player.isMuted()) { player.unMute(); showToast('🔊 סאונד'); } else { player.mute(); showToast('🔇 מושתק'); } } }
         });
 
-        function seekRelative(seconds) {
-            if(!player) return;
-            const newTime = player.getCurrentTime() + seconds;
-            player.seekTo(newTime);
-            db.ref(`rooms/${currentRoom}/current_song`).update({ timestamp: newTime, status: 1 });
-        }
-
-        function changeVolume(amount) {
-            if(!player) return;
-            const newVol = player.getVolume() + amount;
-            player.setVolume(newVol);
-            showToast(`🔊 ווליום: ${newVol}%`);
-        }
-
-        function showToast(text) {
-            const t = document.getElementById('toast');
-            t.innerText = text; t.style.opacity = 1;
-            setTimeout(() => t.style.opacity = 0, 2000);
-        }
-
+        // --- לוגיקת אפליקציה ---
         function createRoom() {
             myName = document.getElementById('usernameInput').value || "Admin";
             enterRoom(Math.floor(1000 + Math.random() * 9000));
@@ -403,7 +471,11 @@
                 if(list) list.innerHTML = "";
                 if(list) {
                     snap.forEach(child => {
-                        list.innerHTML += `<div class="user-row"><i class="fas fa-user"></i> ${child.val().name}</div>`;
+                        list.innerHTML += `
+                            <div class="user-row">
+                                <div class="avatar-circle"><i class="fas fa-music"></i></div>
+                                <span>${child.val().name}</span>
+                            </div>`;
                     });
                 }
             });
@@ -413,16 +485,15 @@
                 if (!data) return;
                 
                 document.getElementById('npTitle').innerText = data.title;
-                document.getElementById('npThumb').src = data.thumbnail || "https://via.placeholder.com/50";
-                document.getElementById('npArtist').innerText = data.channel || "YouSync"; // הצגת שם הערוץ
+                document.getElementById('npThumb').src = data.thumbnail || "https://via.placeholder.com/56";
+                document.getElementById('npArtist').innerText = data.channel || "YouSync";
                 currentVideoId = data.videoId;
 
-                // עדכון Media Session (מסך נעילה)
+                // עדכון Media Session
                 if ('mediaSession' in navigator) {
                     navigator.mediaSession.metadata = new MediaMetadata({
-                        title: data.title,
-                        artist: data.channel || "YouSync",
-                        artwork: [{ src: data.thumbnail || "https://via.placeholder.com/512", sizes: '512x512', type: 'image/png' }]
+                        title: data.title, artist: data.channel || "YouSync",
+                        artwork: [{ src: data.thumbnail, sizes: '512x512', type: 'image/png' }]
                     });
                 }
 
@@ -449,7 +520,7 @@
                 }
             });
 
-            db.ref(`rooms/${currentRoom}/chat`).limitToLast(20).on('child_added', snap => {
+            db.ref(`rooms/${currentRoom}/chat`).limitToLast(30).on('child_added', snap => {
                 const msg = snap.val();
                 const div = document.getElementById('chatMessages');
                 div.innerHTML += `<div class="msg"><strong>${msg.user}</strong>${msg.text}</div>`;
@@ -460,10 +531,6 @@
                  showEmoji(snap.val().emoji);
                  snap.ref.remove();
             });
-        }
-
-        function toggleChat() {
-            document.body.classList.toggle('chat-hidden');
         }
 
         function loadYoutubePlayer() {
@@ -484,13 +551,11 @@
                 events: { 'onStateChange': onPlayerStateChange }
             });
             setInterval(updateSeekBar, 1000); 
-
-            // --- Media Session Handlers (מסך נעילה) ---
             if ('mediaSession' in navigator) {
-                navigator.mediaSession.setActionHandler('play', function() { togglePlay(); });
-                navigator.mediaSession.setActionHandler('pause', function() { togglePlay(); });
-                navigator.mediaSession.setActionHandler('previoustrack', function() { seekRelative(-10); });
-                navigator.mediaSession.setActionHandler('nexttrack', function() { seekRelative(10); });
+                navigator.mediaSession.setActionHandler('play', togglePlay);
+                navigator.mediaSession.setActionHandler('pause', togglePlay);
+                navigator.mediaSession.setActionHandler('previoustrack', () => seekRelative(-10));
+                navigator.mediaSession.setActionHandler('nexttrack', () => seekRelative(10));
             }
         }
 
@@ -503,47 +568,92 @@
 
         function togglePlay() {
             if(!player) return;
-            const state = player.getPlayerState();
-            const newStatus = (state === 1) ? 2 : 1;
+            const newStatus = (player.getPlayerState() === 1) ? 2 : 1;
             db.ref(`rooms/${currentRoom}/current_song`).update({ 
-                status: newStatus,
-                timestamp: player.getCurrentTime()
+                status: newStatus, timestamp: player.getCurrentTime()
             });
         }
 
+        function setVolume(val) {
+            if(player) player.setVolume(val);
+        }
+        
+        function changeVolume(amount) {
+            if(!player) return;
+            const newVol = player.getVolume() + amount;
+            player.setVolume(newVol);
+            document.querySelector('.volume-slider').value = newVol;
+            showToast(`🔊 ${newVol}%`);
+        }
+
+        function seekRelative(seconds) {
+            if(!player) return;
+            const newTime = player.getCurrentTime() + seconds;
+            player.seekTo(newTime);
+            db.ref(`rooms/${currentRoom}/current_song`).update({ timestamp: newTime, status: 1 });
+        }
+
+        function updateSeekBar() {
+            if (!player || !player.getCurrentTime || isDragging) return;
+            const curr = player.getCurrentTime();
+            const dur = player.getDuration();
+            if (dur > 0) {
+                document.getElementById('seekBar').value = (curr / dur) * 100;
+                document.getElementById('currTime').innerText = formatTime(curr);
+                document.getElementById('durTime').innerText = formatTime(dur);
+                const val = (curr / dur) * 100;
+                document.getElementById('seekBar').style.background = `linear-gradient(to right, var(--primary) 0%, var(--primary) ${val}%, #444 ${val}%, #444 100%)`;
+            }
+        }
+
+        function onSeekInput() {
+            isDragging = true;
+            const val = document.getElementById('seekBar').value;
+            document.getElementById('currTime').innerText = formatTime((val / 100) * player.getDuration());
+        }
+
+        function onSeekChange() {
+            isDragging = false;
+            const val = document.getElementById('seekBar').value;
+            const newTime = (val / 100) * player.getDuration();
+            player.seekTo(newTime);
+            db.ref(`rooms/${currentRoom}/current_song`).update({ timestamp: newTime, status: 1 });
+        }
+
+        function formatTime(s) {
+            const m = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            return `${m}:${sec < 10 ? '0'+sec : sec}`;
+        }
+
+        // --- חיפוש וגריד ---
         async function loadHomePage() {
             currentSearchQuery = "להיטים ישראלים 2025";
             const grid = document.getElementById('resultsGrid');
-            grid.innerHTML = '<p style="text-align:center; width:100%; color:#aaa;">טוען את הטופ 100...</p>';
+            grid.innerHTML = '<div style="width:100%; text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
             
-            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=20&q=${encodeURIComponent(currentSearchQuery)}&key=${YOUTUBE_API_KEY}`;
-            
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=24&q=${encodeURIComponent(currentSearchQuery)}&key=${YOUTUBE_API_KEY}`;
             try {
                 const res = await fetch(url);
                 const data = await res.json();
                 nextPageToken = data.nextPageToken || ""; 
-                
                 grid.innerHTML = "";
                 if(data.items) renderGrid(data.items);
             } catch(e) { console.error(e); }
         }
 
         async function loadMoreVideos() {
-            if(!nextPageToken) return alert("אין עוד תוצאות כרגע");
-            
+            if(!nextPageToken) return showToast("אין עוד תוצאות");
             const btn = document.querySelector('.btn-load-more');
-            btn.innerText = "טוען...";
-            
-            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=20&q=${encodeURIComponent(currentSearchQuery)}&pageToken=${nextPageToken}&key=${YOUTUBE_API_KEY}`;
-            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=24&q=${encodeURIComponent(currentSearchQuery)}&pageToken=${nextPageToken}&key=${YOUTUBE_API_KEY}`;
             try {
                 const res = await fetch(url);
                 const data = await res.json();
                 nextPageToken = data.nextPageToken || ""; 
-                
                 if(data.items) renderGrid(data.items); 
             } catch(e) { console.error(e); }
-            finally { btn.innerText = "⬇ טען עוד שירים"; }
+            finally { btn.innerText = "⬇ עוד שירים"; }
         }
 
         function renderGrid(videos) {
@@ -551,12 +661,11 @@
             videos.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'video-card';
-                // העברת שם הערוץ גם לפונקציה
                 div.onclick = () => playVideo(item.id.videoId, item.snippet.title, item.snippet.thumbnails.medium.url, item.snippet.channelTitle);
                 div.innerHTML = `
                     <img src="${item.snippet.thumbnails.medium.url}" class="card-img">
                     <div class="card-title">${item.snippet.title}</div>
-                    <div class="card-artist" style="font-size:11px; color:#aaa;">${item.snippet.channelTitle}</div>
+                    <div class="card-artist">${item.snippet.channelTitle}</div>
                 `;
                 grid.appendChild(div);
             });
@@ -569,9 +678,8 @@
         async function loadSearchResults(query) {
             currentSearchQuery = query;
             const grid = document.getElementById('resultsGrid');
-            grid.innerHTML = '<p>מחפש...</p>';
-            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=20&q=${encodeURIComponent(query)}&key=${YOUTUBE_API_KEY}`;
-            
+            grid.innerHTML = '<div style="width:100%; text-align:center;"><i class="fas fa-spinner fa-spin"></i></div>';
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=24&q=${encodeURIComponent(query)}&key=${YOUTUBE_API_KEY}`;
             try {
                 const res = await fetch(url);
                 const data = await res.json();
@@ -581,64 +689,19 @@
             } catch(e) { console.error(e); }
         }
 
-        function updateSeekBar() {
-            if (!player || !player.getCurrentTime || isDragging) return;
-            
-            const curr = player.getCurrentTime();
-            const dur = player.getDuration();
-            
-            if (dur > 0) {
-                document.getElementById('seekBar').value = (curr / dur) * 100;
-                document.getElementById('currTime').innerText = formatTime(curr);
-                document.getElementById('durTime').innerText = formatTime(dur);
-                const val = (curr / dur) * 100;
-                document.getElementById('seekBar').style.background = `linear-gradient(to right, #1DB954 0%, #1DB954 ${val}%, #444 ${val}%, #444 100%)`;
-            }
-        }
-
-        function onSeekInput() {
-            isDragging = true;
-            const val = document.getElementById('seekBar').value;
-            const dur = player.getDuration();
-            document.getElementById('currTime').innerText = formatTime((val / 100) * dur);
-        }
-
-        function onSeekChange() {
-            isDragging = false;
-            const val = document.getElementById('seekBar').value;
-            const dur = player.getDuration();
-            const newTime = (val / 100) * dur;
-            
-            player.seekTo(newTime);
-            db.ref(`rooms/${currentRoom}/current_song`).update({
-                timestamp: newTime,
-                status: 1 
-            });
-        }
-
-        function formatTime(s) {
-            const m = Math.floor(s / 60);
-            const sec = Math.floor(s % 60);
-            return `${m}:${sec < 10 ? '0'+sec : sec}`;
-        }
-
         function playVideo(id, title, thumb, channel) {
             window.scrollTo({ top: 0, behavior: 'smooth' });
             db.ref(`rooms/${currentRoom}/current_song`).set({
-                videoId: id, 
-                title: title, 
-                thumbnail: thumb, 
-                channel: channel || "YouSync", // שמירת שם הערוץ
-                status: 1, 
-                timestamp: 0
+                videoId: id, title: title, thumbnail: thumb, channel: channel, status: 1, timestamp: 0
             });
         }
 
         function sendMessage() {
-            const txt = document.getElementById('chatInput').value;
+            const input = document.getElementById('chatInput');
+            const txt = input.value;
             if(txt) {
                 db.ref(`rooms/${currentRoom}/chat`).push({ user: myName, text: txt });
-                document.getElementById('chatInput').value = "";
+                input.value = "";
             }
         }
 
@@ -663,12 +726,20 @@
         style.innerHTML = `@keyframes floatUp { 0% { opacity: 0; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-250px); } }`;
         document.head.appendChild(style);
 
-        // --- פונקציית הורדה עם גיבוי ---
-        async function downloadCurrent() {
-            if(!currentVideoId) return alert("אין שיר מנגן");
+        function showToast(text) {
+            const t = document.getElementById('toast');
+            t.innerText = text; t.style.opacity = 1;
+            setTimeout(() => t.style.opacity = 0, 2000);
+        }
 
-            const btn = document.getElementById('dlBtn');
-            const originalIcon = btn.innerHTML;
+        function toggleChat() {
+            document.body.classList.toggle('chat-hidden');
+        }
+
+        async function downloadCurrent() {
+            if(!currentVideoId) return showToast("אין שיר מנגן");
+            const btn = document.querySelector('.fa-download').parentElement;
+            const originalHTML = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
             const url = `https://${RAPID_API_HOST}/dl?id=${currentVideoId}`;
@@ -677,22 +748,17 @@
             try {
                 const res = await fetch(url, options);
                 const data = await res.json();
-                if(data.link) {
-                    window.location.href = data.link;
-                } else if(data.url) {
-                    window.location.href = data.url;
-                } else {
-                    throw new Error("API Limit");
-                }
+                if(data.link) window.location.href = data.link;
+                else if(data.url) window.location.href = data.url;
+                else throw new Error("API Limit");
             } catch(e) {
-                if(confirm("המפתח החינמי הגיע למכסה. לעבור להורדה ישירה?")) {
+                if(confirm("שרת ההורדות עמוס. לעבור להורדה ידנית?")) {
                     window.open(`https://tomp3.cc/youtube-downloader/${currentVideoId}`, '_blank');
                 }
             } finally {
-                btn.innerHTML = originalIcon;
+                btn.innerHTML = originalHTML;
             }
         }
-
     </script>
 </body>
 </html>
