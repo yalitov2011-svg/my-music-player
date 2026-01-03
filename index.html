@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>YouSync V19 - Keyboard Control</title>
+    <title>YouSync V20 - Infinite & Shareable</title>
     
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -101,17 +101,23 @@
         }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* גריד שירים */
-        .results-header { width: 100%; max-width: 900px; display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
         .results-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px;
-            width: 100%; max-width: 900px; margin-top: 10px; padding-bottom: 100px;
+            width: 100%; max-width: 900px; margin-top: 20px; padding-bottom: 20px;
         }
-        .video-card { cursor: pointer; transition: 0.2s; background: #1a1a1a; padding: 8px; border-radius: 8px; position: relative; }
-        .video-card:hover { background: #252525; transform: translateY(-2px); }
+        .video-card { cursor: pointer; transition: 0.2s; background: #1a1a1a; padding: 8px; border-radius: 8px; }
+        .video-card:hover { background: #252525; }
         .card-img { width: 100%; border-radius: 6px; aspect-ratio: 16/9; object-fit: cover; }
-        .card-title { font-size: 12px; margin-top: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: #eee; }
-        .card-artist { font-size: 11px; color: #aaa; margin-top: 2px; }
+        .card-title { font-size: 12px; margin-top: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+        /* כפתור טען עוד */
+        .load-more-container {
+            width: 100%; max-width: 900px; text-align: center; padding-bottom: 50px;
+        }
+        .btn-load-more {
+            background: #333; color: white; border: 1px solid #555; padding: 10px 30px; border-radius: 20px; cursor: pointer;
+        }
+        .btn-load-more:hover { background: #444; border-color: white; }
 
         /* --- צ'אט --- */
         .chat-panel {
@@ -186,7 +192,6 @@
             .toggle-chat-btn { color: var(--primary); }
         }
 
-        /* טוסט הודעה לווליום/ניווט */
         .toast {
             position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
             background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px;
@@ -197,7 +202,6 @@
 </head>
 <body>
 
-    <!-- טוסט הודעות -->
     <div id="toast" class="toast"></div>
 
     <!-- כניסה -->
@@ -215,13 +219,11 @@
     <!-- אפליקציה -->
     <div id="appScreen" style="display:none;">
         
-        <!-- סרגל צד -->
         <div class="sidebar">
             <h3 style="color:var(--primary); margin-top:0;">חדר: <span id="roomCodeDisplay"></span></h3>
             <div id="usersList"></div>
         </div>
 
-        <!-- תוכן ראשי -->
         <div class="main-content">
             <div class="search-container">
                 <input type="text" id="searchInput" class="search-input" placeholder="חפש שיר...">
@@ -237,9 +239,13 @@
                 <button onclick="loadHomePage()" style="background:none; border:none; color:var(--primary); cursor:pointer;">🔄 רענן</button>
             </div>
             <div id="resultsGrid" class="results-grid"></div>
+            
+            <!-- כפתור אינסוף שירים -->
+            <div class="load-more-container">
+                <button class="btn-load-more" onclick="loadMoreVideos()">⬇ טען עוד שירים</button>
+            </div>
         </div>
 
-        <!-- צ'אט -->
         <div class="chat-panel">
             <div class="chat-header">
                 <span>💬 צ'אט</span>
@@ -252,7 +258,6 @@
             </div>
         </div>
 
-        <!-- נגן תחתון -->
         <div class="bottom-bar">
             <div class="now-playing">
                 <img id="npThumb" src="https://via.placeholder.com/50" style="width:40px; height:40px; border-radius:4px;">
@@ -304,60 +309,40 @@
         let player, isSyncing = false, currentRoom = null, myName = "", myKey = "";
         let isDragging = false; 
         let currentVideoId = "";
+        
+        // משתנים לאינסוף שירים
+        let nextPageToken = "";
+        let currentSearchQuery = "להיטים ישראלים 2025";
 
-        // --- Keyboard Controls (חדש!) ---
+        // --- בדיקת URL בכניסה (Deep Linking) ---
+        window.onload = function() {
+            const params = new URLSearchParams(window.location.search);
+            const roomParam = params.get('room');
+            if (roomParam) {
+                document.getElementById('roomInput').value = roomParam;
+            }
+        };
+
+        // --- Keyboard Controls ---
         document.addEventListener('keydown', function(event) {
-            // מונע הפעלה כשכותבים בצ'אט או בחיפוש
             if (document.activeElement.tagName === 'INPUT') return;
-
             const code = event.code;
-
-            // Space: Play/Pause
             if (code === 'Space') {
-                event.preventDefault(); // מונע גלילה
-                togglePlay();
+                event.preventDefault(); togglePlay();
                 showToast(player && player.getPlayerState() === 1 ? '⏸ הושהה' : '▶ מנגן');
             }
-            // Arrow Right: +10s
-            else if (code === 'ArrowRight') {
-                event.preventDefault();
-                seekRelative(10);
-                showToast('⏩ +10 שניות');
-            }
-            // Arrow Left: -10s
-            else if (code === 'ArrowLeft') {
-                event.preventDefault();
-                seekRelative(-10);
-                showToast('⏪ -10 שניות');
-            }
-            // Arrow Up: Volume Up
-            else if (code === 'ArrowUp') {
-                event.preventDefault();
-                changeVolume(10);
-            }
-            // Arrow Down: Volume Down
-            else if (code === 'ArrowDown') {
-                event.preventDefault();
-                changeVolume(-10);
-            }
-            // Key M: Mute
-            else if (code === 'KeyM') {
-                if(player) {
-                    if(player.isMuted()) { player.unMute(); showToast('🔊 סאונד'); }
-                    else { player.mute(); showToast('🔇 מושתק'); }
-                }
-            }
+            else if (code === 'ArrowRight') { event.preventDefault(); seekRelative(10); showToast('⏩ +10 שניות'); }
+            else if (code === 'ArrowLeft') { event.preventDefault(); seekRelative(-10); showToast('⏪ -10 שניות'); }
+            else if (code === 'ArrowUp') { event.preventDefault(); changeVolume(10); }
+            else if (code === 'ArrowDown') { event.preventDefault(); changeVolume(-10); }
+            else if (code === 'KeyM') { if(player) { if(player.isMuted()) { player.unMute(); showToast('🔊 סאונד'); } else { player.mute(); showToast('🔇 מושתק'); } } }
         });
 
         function seekRelative(seconds) {
             if(!player) return;
             const newTime = player.getCurrentTime() + seconds;
             player.seekTo(newTime);
-            // עדכון לכולם
-            db.ref(`rooms/${currentRoom}/current_song`).update({
-                timestamp: newTime,
-                status: 1
-            });
+            db.ref(`rooms/${currentRoom}/current_song`).update({ timestamp: newTime, status: 1 });
         }
 
         function changeVolume(amount) {
@@ -369,12 +354,11 @@
 
         function showToast(text) {
             const t = document.getElementById('toast');
-            t.innerText = text;
-            t.style.opacity = 1;
+            t.innerText = text; t.style.opacity = 1;
             setTimeout(() => t.style.opacity = 0, 2000);
         }
 
-        // --- שאר הקוד (כניסה, חדרים וכו') ---
+        // --- כניסה לחדר ---
         function createRoom() {
             myName = document.getElementById('usernameInput').value || "Admin";
             enterRoom(Math.floor(1000 + Math.random() * 9000));
@@ -387,6 +371,11 @@
 
         function enterRoom(code) {
             currentRoom = code;
+            
+            // עדכון ה-URL כדי שיהיה אפשר לשתף
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?room=' + code;
+            window.history.pushState({path:newUrl},'',newUrl);
+
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('appScreen').style.display = (window.innerWidth > 768) ? 'grid' : 'flex';
             document.getElementById('roomCodeDisplay').innerText = code;
@@ -498,67 +487,46 @@
             });
         }
 
+        // --- טעינת שירים ו"אינסוף" ---
         async function loadHomePage() {
+            currentSearchQuery = "להיטים ישראלים 2025";
             const grid = document.getElementById('resultsGrid');
-            grid.innerHTML = '<p style="text-align:center; width:100%; color:#aaa;">טוען את הטופ 100...</p>';
-
-            const queries = [
-                "עומר אדם שירים חדשים official video -remix",
-                "אושר כהן שירים חדשים official video -remix",
-                "אודיה שירים חדשים official video -remix",
-                "פאר טסי אייל גולן שירים חדשים -remix"
-            ];
-
-            let allVideos = [];
-
+            grid.innerHTML = '<p style="text-align:center; width:100%; color:#aaa;">טוען...</p>';
+            
+            // חיפוש ראשוני
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=20&q=${encodeURIComponent(currentSearchQuery)}&key=${YOUTUBE_API_KEY}`;
+            
             try {
-                const promises = queries.slice(0, 3).map(q => 
-                    fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=30&q=${encodeURIComponent(q)}&videoEmbeddable=true&key=${YOUTUBE_API_KEY}`)
-                    .then(r => r.json())
-                );
-
-                const results = await Promise.all(promises);
-
-                results.forEach(data => {
-                    if (data.items) {
-                        const cleanItems = data.items.filter(item => {
-                            const t = item.snippet.title.toLowerCase();
-                            return !t.includes("remix") && !t.includes("רמיקס") && !t.includes("cover");
-                        });
-                        allVideos = [...allVideos, ...cleanItems];
-                    }
-                });
-
-                allVideos = shuffleArray(allVideos);
-
-                const uniqueVideos = [];
-                const seenIds = new Set();
-                allVideos.forEach(v => {
-                    if(!seenIds.has(v.id.videoId)){
-                        seenIds.add(v.id.videoId);
-                        uniqueVideos.push(v);
-                    }
-                });
-
-                renderGrid(uniqueVideos);
-
-            } catch (e) {
-                console.error(e);
-                grid.innerHTML = "<p>שגיאה בטעינת שירים.</p>";
-            }
+                const res = await fetch(url);
+                const data = await res.json();
+                nextPageToken = data.nextPageToken || ""; // שמירת הטוקן לעמוד הבא
+                
+                grid.innerHTML = "";
+                if(data.items) renderGrid(data.items);
+            } catch(e) { console.error(e); }
         }
 
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
+        // פונקציית טען עוד (Infinite Scroll)
+        async function loadMoreVideos() {
+            if(!nextPageToken) return alert("אין עוד תוצאות כרגע");
+            
+            const btn = document.querySelector('.btn-load-more');
+            btn.innerText = "טוען...";
+            
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=20&q=${encodeURIComponent(currentSearchQuery)}&pageToken=${nextPageToken}&key=${YOUTUBE_API_KEY}`;
+            
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                nextPageToken = data.nextPageToken || ""; // עדכון הטוקן
+                
+                if(data.items) renderGrid(data.items); // הוספה לגריד הקיים (לא מוחק)
+            } catch(e) { console.error(e); }
+            finally { btn.innerText = "⬇ טען עוד שירים"; }
         }
 
         function renderGrid(videos) {
             const grid = document.getElementById('resultsGrid');
-            grid.innerHTML = "";
             videos.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'video-card';
@@ -570,6 +538,25 @@
                 `;
                 grid.appendChild(div);
             });
+        }
+
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') loadSearchResults(e.target.value);
+        });
+
+        async function loadSearchResults(query) {
+            currentSearchQuery = query;
+            const grid = document.getElementById('resultsGrid');
+            grid.innerHTML = '<p>מחפש...</p>';
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=20&q=${encodeURIComponent(query)}&key=${YOUTUBE_API_KEY}`;
+            
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                nextPageToken = data.nextPageToken || "";
+                grid.innerHTML = "";
+                if(data.items) renderGrid(data.items);
+            } catch(e) { console.error(e); }
         }
 
         function updateSeekBar() {
@@ -613,19 +600,6 @@
             return `${m}:${sec < 10 ? '0'+sec : sec}`;
         }
 
-        document.getElementById('searchInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') loadSearchResults(e.target.value);
-        });
-
-        async function loadSearchResults(query) {
-            const grid = document.getElementById('resultsGrid');
-            grid.innerHTML = '<p>מחפש...</p>';
-            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=20&q=${encodeURIComponent(query)}&key=${YOUTUBE_API_KEY}`;
-            const res = await fetch(url);
-            const data = await res.json();
-            if(data.items) renderGrid(data.items);
-        }
-
         function playVideo(id, title, thumb) {
             window.scrollTo({ top: 0, behavior: 'smooth' });
             db.ref(`rooms/${currentRoom}/current_song`).set({
@@ -662,6 +636,7 @@
         style.innerHTML = `@keyframes floatUp { 0% { opacity: 0; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-250px); } }`;
         document.head.appendChild(style);
 
+        // --- פונקציית הורדה עם גיבוי ---
         async function downloadCurrent() {
             if(!currentVideoId) return alert("אין שיר מנגן");
 
