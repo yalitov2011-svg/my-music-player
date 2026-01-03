@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>YouSync V17 - Updated Key</title>
+    <title>YouSync V18 - Top 100</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -99,14 +99,17 @@
         }
         iframe { width: 100%; height: 100%; border: none; }
 
+        /* גריד שירים */
+        .results-header { width: 100%; max-width: 900px; display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
         .results-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px;
-            width: 100%; max-width: 900px; margin-top: 20px; padding-bottom: 100px;
+            width: 100%; max-width: 900px; margin-top: 10px; padding-bottom: 100px;
         }
-        .video-card { cursor: pointer; transition: 0.2s; background: #1a1a1a; padding: 8px; border-radius: 8px; }
-        .video-card:hover { background: #252525; }
+        .video-card { cursor: pointer; transition: 0.2s; background: #1a1a1a; padding: 8px; border-radius: 8px; position: relative; }
+        .video-card:hover { background: #252525; transform: translateY(-2px); }
         .card-img { width: 100%; border-radius: 6px; aspect-ratio: 16/9; object-fit: cover; }
-        .card-title { font-size: 12px; margin-top: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .card-title { font-size: 12px; margin-top: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: #eee; }
+        .card-artist { font-size: 11px; color: #aaa; margin-top: 2px; }
 
         /* --- צ'אט --- */
         .chat-panel {
@@ -213,6 +216,10 @@
                 <div id="player"></div>
             </div>
 
+            <div class="results-header">
+                <h3 style="margin:0;">🔥 להיטים חמים (ללא רמיקסים)</h3>
+                <button onclick="loadHomePage()" style="background:none; border:none; color:var(--primary); cursor:pointer;">🔄 רענן</button>
+            </div>
             <div id="resultsGrid" class="results-grid"></div>
         </div>
 
@@ -264,7 +271,6 @@
 
     <script>
         // --- הגדרות ---
-        // כאן הכנסתי את המפתח המעודכן ששלחת בתמונה!
         const RAPID_API_KEY = 'efb1ed4f48msh5dfd6650699ded0p1f5775jsn2c2c0eb8bbb3';
         const RAPID_API_HOST = 'youtube-mp36.p.rapidapi.com'; 
         const YOUTUBE_API_KEY = 'AIzaSyAuLutPPSJlZJKkfBrzRNURSibcqkeeA60';
@@ -278,7 +284,7 @@
         try { firebase.initializeApp(firebaseConfig); } catch(e){}
         const db = firebase.database();
 
-        let player, isSyncing = false, currentRoom = null, myName = "", myKey = "";
+        let player, isSyncing = false, currentRoom = null, myName = "";
         let isDragging = false; 
         let currentVideoId = "";
 
@@ -300,10 +306,10 @@
             document.getElementById('roomCodeDisplay').innerText = code;
 
             loadYoutubePlayer();
-            loadResults("להיטים ישראל 2025");
+            // כאן קורה הקסם: טעינת רשימת שירים משודרגת
+            loadHomePage(); 
 
             const userRef = db.ref(`rooms/${code}/users`).push();
-            myKey = userRef.key;
             userRef.set({ name: myName });
             userRef.onDisconnect().remove();
 
@@ -311,7 +317,6 @@
         }
 
         function setupListeners() {
-            // משתמשים
             db.ref(`rooms/${currentRoom}/users`).on('value', snap => {
                 const list = document.getElementById('usersList');
                 if(list) list.innerHTML = "";
@@ -323,7 +328,6 @@
                 }
             });
 
-            // שיר נוכחי
             db.ref(`rooms/${currentRoom}/current_song`).on('value', snap => {
                 const data = snap.val();
                 if (!data) return;
@@ -355,7 +359,6 @@
                 }
             });
 
-            // צ'אט
             db.ref(`rooms/${currentRoom}/chat`).limitToLast(20).on('child_added', snap => {
                 const msg = snap.val();
                 const div = document.getElementById('chatMessages');
@@ -363,7 +366,6 @@
                 div.scrollTop = div.scrollHeight;
             });
             
-            // ריאקציות
             db.ref(`rooms/${currentRoom}/reactions`).on('child_added', snap => {
                  showEmoji(snap.val().emoji);
                  snap.ref.remove();
@@ -411,6 +413,102 @@
             });
         }
 
+        // --- פונקציית טעינת דף הבית המשודרגת (המאגר) ---
+        async function loadHomePage() {
+            const grid = document.getElementById('resultsGrid');
+            grid.innerHTML = '<p style="text-align:center; width:100%; color:#aaa;">טוען את הטופ 100...</p>';
+
+            // רשימת חיפושים (כדי לגוון ולהשיג הרבה שירים)
+            const queries = [
+                "עומר אדם שירים חדשים official video -remix",
+                "אושר כהן שירים חדשים official video -remix",
+                "אודיה שירים חדשים official video -remix",
+                "פאר טסי אייל גולן שירים חדשים -remix"
+            ];
+
+            let allVideos = [];
+
+            try {
+                // מריץ 3 חיפושים במקביל למהירות שיא
+                const promises = queries.slice(0, 3).map(q => 
+                    fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=30&q=${encodeURIComponent(q)}&videoEmbeddable=true&key=${YOUTUBE_API_KEY}`)
+                    .then(r => r.json())
+                );
+
+                const results = await Promise.all(promises);
+
+                // איחוד תוצאות וסינון רמיקסים ידני (ליתר ביטחון)
+                results.forEach(data => {
+                    if (data.items) {
+                        const cleanItems = data.items.filter(item => {
+                            const t = item.snippet.title.toLowerCase();
+                            return !t.includes("remix") && !t.includes("רמיקס") && !t.includes("cover");
+                        });
+                        allVideos = [...allVideos, ...cleanItems];
+                    }
+                });
+
+                // ערבוב השירים (Shuffle) כדי שיהיה מעניין
+                allVideos = shuffleArray(allVideos);
+
+                // הסרת כפילויות (לפי ID)
+                const uniqueVideos = [];
+                const seenIds = new Set();
+                allVideos.forEach(v => {
+                    if(!seenIds.has(v.id.videoId)){
+                        seenIds.add(v.id.videoId);
+                        uniqueVideos.push(v);
+                    }
+                });
+
+                renderGrid(uniqueVideos);
+
+            } catch (e) {
+                console.error(e);
+                grid.innerHTML = "<p>שגיאה בטעינת שירים.</p>";
+            }
+        }
+
+        // פונקציית ערבוב מערך
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // רינדור הגריד
+        function renderGrid(videos) {
+            const grid = document.getElementById('resultsGrid');
+            grid.innerHTML = "";
+            videos.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'video-card';
+                div.onclick = () => playVideo(item.id.videoId, item.snippet.title, item.snippet.thumbnails.medium.url);
+                div.innerHTML = `
+                    <img src="${item.snippet.thumbnails.medium.url}" class="card-img">
+                    <div class="card-title">${item.snippet.title}</div>
+                    <div class="card-artist">${item.snippet.channelTitle}</div>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        // --- חיפוש רגיל ---
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') loadSearchResults(e.target.value);
+        });
+
+        async function loadSearchResults(query) {
+            const grid = document.getElementById('resultsGrid');
+            grid.innerHTML = '<p>מחפש...</p>';
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=20&q=${encodeURIComponent(query)}&key=${YOUTUBE_API_KEY}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            if(data.items) renderGrid(data.items);
+        }
+
         function updateSeekBar() {
             if (!player || !player.getCurrentTime || isDragging) return;
             
@@ -450,30 +548,6 @@
             const m = Math.floor(s / 60);
             const sec = Math.floor(s % 60);
             return `${m}:${sec < 10 ? '0'+sec : sec}`;
-        }
-
-        document.getElementById('searchInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') loadResults(e.target.value);
-        });
-
-        async function loadResults(query) {
-            const grid = document.getElementById('resultsGrid');
-            grid.innerHTML = '<p>טוען...</p>';
-            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=12&q=${encodeURIComponent(query)}&key=${YOUTUBE_API_KEY}`;
-            const res = await fetch(url);
-            const data = await res.json();
-            grid.innerHTML = "";
-            
-            data.items.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'video-card';
-                div.onclick = () => playVideo(item.id.videoId, item.snippet.title, item.snippet.thumbnails.medium.url);
-                div.innerHTML = `
-                    <img src="${item.snippet.thumbnails.medium.url}" class="card-img">
-                    <div class="card-title">${item.snippet.title}</div>
-                `;
-                grid.appendChild(div);
-            });
         }
 
         function playVideo(id, title, thumb) {
@@ -534,7 +608,6 @@
                     throw new Error("API Limit");
                 }
             } catch(e) {
-                // גיבוי למקרה של תקלה
                 if(confirm("המפתח החינמי הגיע למכסה. לעבור להורדה ישירה?")) {
                     window.open(`https://tomp3.cc/youtube-downloader/${currentVideoId}`, '_blank');
                 }
