@@ -3,8 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>YouSync V20 - Infinite & Shareable</title>
     
+    <!-- === SEO ותגיות לגוגל (חדש!) === -->
+    <title>YouSync - נגן מוזיקה חברתי משותף</title>
+    <meta name="description" content="האזן למוזיקה יחד עם חברים בזמן אמת! נגן YouSync מאפשר ליצור חדרי מוזיקה, לשתף שירים, להוריד שירים ולשוחח בצ'אט בחינם.">
+    <meta name="keywords" content="מוזיקה, נגן משותף, יוטיוב, ספוטיפיי, מוזיקה בחינם, חדרים, שמיעה ביחד, הורדת שירים, MP3">
+    <meta name="author" content="YouSync">
+    
+    <!-- תצוגה יפה כששולחים בוואטסאפ (Open Graph) -->
+    <meta property="og:title" content="YouSync - בואו לשמוע מוזיקה ביחד 🎧">
+    <meta property="og:description" content="הצטרף לחדר שלי! שומעים מוזיקה, מדברים ומורידים שירים בחינם.">
+    <meta property="og:image" content="https://cdn-icons-png.flaticon.com/512/3669/3669986.png"> 
+    <meta property="og:url" content="https://yalitov2011-svg.github.io/my-music-player/">
+    <meta property="og:type" content="website">
+
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -263,7 +275,7 @@
                 <img id="npThumb" src="https://via.placeholder.com/50" style="width:40px; height:40px; border-radius:4px;">
                 <div class="np-info">
                     <div id="npTitle" style="font-size:13px; font-weight:bold;">לא מנגן</div>
-                    <div style="font-size:11px; color:#aaa;">YouSync</div>
+                    <div id="npArtist" style="font-size:11px; color:#aaa;">YouSync</div>
                 </div>
             </div>
 
@@ -310,11 +322,9 @@
         let isDragging = false; 
         let currentVideoId = "";
         
-        // משתנים לאינסוף שירים
         let nextPageToken = "";
         let currentSearchQuery = "להיטים ישראלים 2025";
 
-        // --- בדיקת URL בכניסה (Deep Linking) ---
         window.onload = function() {
             const params = new URLSearchParams(window.location.search);
             const roomParam = params.get('room');
@@ -323,7 +333,6 @@
             }
         };
 
-        // --- Keyboard Controls ---
         document.addEventListener('keydown', function(event) {
             if (document.activeElement.tagName === 'INPUT') return;
             const code = event.code;
@@ -358,7 +367,6 @@
             setTimeout(() => t.style.opacity = 0, 2000);
         }
 
-        // --- כניסה לחדר ---
         function createRoom() {
             myName = document.getElementById('usernameInput').value || "Admin";
             enterRoom(Math.floor(1000 + Math.random() * 9000));
@@ -371,8 +379,6 @@
 
         function enterRoom(code) {
             currentRoom = code;
-            
-            // עדכון ה-URL כדי שיהיה אפשר לשתף
             const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?room=' + code;
             window.history.pushState({path:newUrl},'',newUrl);
 
@@ -408,7 +414,17 @@
                 
                 document.getElementById('npTitle').innerText = data.title;
                 document.getElementById('npThumb').src = data.thumbnail || "https://via.placeholder.com/50";
+                document.getElementById('npArtist').innerText = data.channel || "YouSync"; // הצגת שם הערוץ
                 currentVideoId = data.videoId;
+
+                // עדכון Media Session (מסך נעילה)
+                if ('mediaSession' in navigator) {
+                    navigator.mediaSession.metadata = new MediaMetadata({
+                        title: data.title,
+                        artist: data.channel || "YouSync",
+                        artwork: [{ src: data.thumbnail || "https://via.placeholder.com/512", sizes: '512x512', type: 'image/png' }]
+                    });
+                }
 
                 if (player && player.loadVideoById && player.getVideoData().video_id !== data.videoId) {
                     isSyncing = true;
@@ -468,6 +484,14 @@
                 events: { 'onStateChange': onPlayerStateChange }
             });
             setInterval(updateSeekBar, 1000); 
+
+            // --- Media Session Handlers (מסך נעילה) ---
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.setActionHandler('play', function() { togglePlay(); });
+                navigator.mediaSession.setActionHandler('pause', function() { togglePlay(); });
+                navigator.mediaSession.setActionHandler('previoustrack', function() { seekRelative(-10); });
+                navigator.mediaSession.setActionHandler('nexttrack', function() { seekRelative(10); });
+            }
         }
 
         function onPlayerStateChange(event) {
@@ -487,26 +511,23 @@
             });
         }
 
-        // --- טעינת שירים ו"אינסוף" ---
         async function loadHomePage() {
             currentSearchQuery = "להיטים ישראלים 2025";
             const grid = document.getElementById('resultsGrid');
-            grid.innerHTML = '<p style="text-align:center; width:100%; color:#aaa;">טוען...</p>';
+            grid.innerHTML = '<p style="text-align:center; width:100%; color:#aaa;">טוען את הטופ 100...</p>';
             
-            // חיפוש ראשוני
             const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=20&q=${encodeURIComponent(currentSearchQuery)}&key=${YOUTUBE_API_KEY}`;
             
             try {
                 const res = await fetch(url);
                 const data = await res.json();
-                nextPageToken = data.nextPageToken || ""; // שמירת הטוקן לעמוד הבא
+                nextPageToken = data.nextPageToken || ""; 
                 
                 grid.innerHTML = "";
                 if(data.items) renderGrid(data.items);
             } catch(e) { console.error(e); }
         }
 
-        // פונקציית טען עוד (Infinite Scroll)
         async function loadMoreVideos() {
             if(!nextPageToken) return alert("אין עוד תוצאות כרגע");
             
@@ -518,9 +539,9 @@
             try {
                 const res = await fetch(url);
                 const data = await res.json();
-                nextPageToken = data.nextPageToken || ""; // עדכון הטוקן
+                nextPageToken = data.nextPageToken || ""; 
                 
-                if(data.items) renderGrid(data.items); // הוספה לגריד הקיים (לא מוחק)
+                if(data.items) renderGrid(data.items); 
             } catch(e) { console.error(e); }
             finally { btn.innerText = "⬇ טען עוד שירים"; }
         }
@@ -530,11 +551,12 @@
             videos.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'video-card';
-                div.onclick = () => playVideo(item.id.videoId, item.snippet.title, item.snippet.thumbnails.medium.url);
+                // העברת שם הערוץ גם לפונקציה
+                div.onclick = () => playVideo(item.id.videoId, item.snippet.title, item.snippet.thumbnails.medium.url, item.snippet.channelTitle);
                 div.innerHTML = `
                     <img src="${item.snippet.thumbnails.medium.url}" class="card-img">
                     <div class="card-title">${item.snippet.title}</div>
-                    <div class="card-artist">${item.snippet.channelTitle}</div>
+                    <div class="card-artist" style="font-size:11px; color:#aaa;">${item.snippet.channelTitle}</div>
                 `;
                 grid.appendChild(div);
             });
@@ -600,10 +622,15 @@
             return `${m}:${sec < 10 ? '0'+sec : sec}`;
         }
 
-        function playVideo(id, title, thumb) {
+        function playVideo(id, title, thumb, channel) {
             window.scrollTo({ top: 0, behavior: 'smooth' });
             db.ref(`rooms/${currentRoom}/current_song`).set({
-                videoId: id, title: title, thumbnail: thumb, status: 1, timestamp: 0
+                videoId: id, 
+                title: title, 
+                thumbnail: thumb, 
+                channel: channel || "YouSync", // שמירת שם הערוץ
+                status: 1, 
+                timestamp: 0
             });
         }
 
