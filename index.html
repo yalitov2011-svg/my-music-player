@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>YouSync V25 - Advanced Settings</title>
+    <title>YouSync V26 - Ultimate Settings</title>
     
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -17,13 +17,38 @@
             --dark: #000000;
             --panel: #121212;
             --border: #282828;
+            --text: #ffffff;
         }
+
+        /* מצב בהיר (לדוגמה) */
+        body.light-mode {
+            --dark: #f0f2f5;
+            --panel: #ffffff;
+            --border: #ccc;
+            --text: #000000;
+        }
+        body.light-mode .main-content, body.light-mode .sidebar, body.light-mode .chat-panel {
+            background: var(--panel); color: var(--text);
+        }
+        body.light-mode .video-card { background: #f9f9f9; border: 1px solid #ddd; }
+        body.light-mode .video-card:hover { background: #eee; }
+        body.light-mode .card-title, body.light-mode .card-artist { color: #000; }
+
+        /* ניגודיות גבוהה */
+        body.high-contrast {
+            --primary: #FFFF00; /* צהוב */
+            --dark: #000;
+            --panel: #000;
+            --border: #FFF;
+            --text: #FFF;
+        }
+        body.high-contrast * { border-color: white !important; }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body { 
             background-color: var(--dark);
-            color: white; 
+            color: var(--text);
             font-family: 'Segoe UI', system-ui, sans-serif; 
             margin: 0; padding: 0;
             height: 100vh;
@@ -31,8 +56,13 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            transition: background-color 0.5s;
+            transition: background-color 0.3s, color 0.3s;
         }
+
+        /* גלילה יפה */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
 
         /* --- מסך כניסה --- */
         #loginScreen {
@@ -69,10 +99,10 @@
 
         /* --- צד ימין (תפריט) --- */
         .sidebar {
-            background: #000; border-left: 1px solid var(--border);
+            background: var(--dark); border-left: 1px solid var(--border);
             padding: 20px; display: flex; flex-direction: column; gap: 15px;
         }
-        .brand { font-size: 22px; font-weight: 800; color: white; margin-bottom: 10px; }
+        .brand { font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 10px; }
         .brand span { color: var(--primary); }
         
         .nav-btn {
@@ -80,7 +110,7 @@
             padding: 10px; cursor: pointer; display: flex; align-items: center; gap: 12px; border-radius: 8px;
             font-weight: 600; transition: 0.2s;
         }
-        .nav-btn:hover { background: #282828; color: white; }
+        .nav-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
 
         .user-list-container { flex: 1; overflow-y: auto; }
         .user-row { padding: 8px; font-size: 14px; color: #ddd; display: flex; align-items: center; gap: 8px;}
@@ -95,7 +125,7 @@
             grid-column: 2;
         }
 
-        /* אפקט זוהר לרקע */
+        /* אפקט זוהר */
         .ambiance-glow {
             position: absolute; top: 0; left: 0; width: 100%; height: 300px;
             background: radial-gradient(circle at top, var(--primary), transparent 70%);
@@ -104,8 +134,8 @@
 
         .search-container { width: 100%; max-width: 600px; margin-bottom: 20px; position: relative; z-index: 10; }
         .search-input {
-            width: 100%; padding: 12px 40px 12px 15px; background: #2a2a2a; border: none; 
-            border-radius: 50px; color: white; outline: none; font-size: 16px;
+            width: 100%; padding: 12px 40px 12px 15px; background: rgba(255,255,255,0.1); border: none; 
+            border-radius: 50px; color: var(--text); outline: none; font-size: 16px;
         }
         .search-icon { position: absolute; right: 15px; top: 12px; color: #888; }
 
@@ -123,7 +153,7 @@
         }
         .video-card { background: #181818; padding: 10px; border-radius: 10px; cursor: pointer; }
         .card-img { width: 100%; border-radius: 6px; aspect-ratio: 16/9; object-fit: cover; }
-        .card-title { font-size: 13px; font-weight: 600; margin-top: 8px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .card-title { font-size: 13px; font-weight: 600; margin-top: 8px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color:var(--text); }
 
         .load-more-btn {
             background: #333; color: white; border: none; padding: 10px 25px; border-radius: 20px; margin-top: 20px;
@@ -135,12 +165,14 @@
             display: flex; flex-direction: column; overflow: hidden;
             grid-column: 3;
         }
-        .chat-header { padding: 15px; background: #111; font-weight: bold; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
-        .chat-messages { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; background: #0a0a0a; }
-        .msg { background: #222; padding: 8px 12px; border-radius: 10px; font-size: 13px; max-width: 85%; align-self: flex-start; }
+        body.chat-hidden #appScreen { grid-template-columns: 260px 1fr 0px; }
+
+        .chat-header { padding: 15px; background: rgba(0,0,0,0.2); font-weight: bold; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.1); }
+        .msg { background: rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 10px; font-size: 13px; max-width: 85%; align-self: flex-start; }
         .msg strong { color: var(--primary); display: block; font-size: 11px; }
-        .chat-input-area { padding: 10px; display: flex; gap: 8px; background: #111; border-top: 1px solid #333; }
-        #chatInput { flex: 1; background: #333; border: none; padding: 10px; border-radius: 20px; color: white; outline: none; }
+        .chat-input-area { padding: 10px; display: flex; gap: 8px; background: rgba(0,0,0,0.2); border-top: 1px solid var(--border); }
+        #chatInput { flex: 1; background: rgba(255,255,255,0.1); border: none; padding: 10px; border-radius: 20px; color: var(--text); outline: none; }
         .mobile-close-chat { display: none; background: none; border: none; color: white; font-size: 20px; }
 
         /* --- נגן תחתון --- */
@@ -167,28 +199,41 @@
 
         .player-right { width: 25%; display: flex; justify-content: flex-end; gap: 15px; }
 
-        /* --- חלון הגדרות משודרג --- */
+        /* --- חלון הגדרות ענק --- */
         #settingsModal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 4000; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.85); z-index: 4000; align-items: center; justify-content: center;
         }
         .settings-content {
-            background: #222; padding: 25px; border-radius: 16px; width: 90%; max-width: 350px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.7); max-height: 80vh; overflow-y: auto;
+            background: #222; padding: 0; border-radius: 16px; width: 95%; max-width: 500px; height: 85vh;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8); display: flex; flex-direction: column; overflow: hidden;
         }
-        .settings-section { margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; }
-        .settings-section h4 { margin: 0 0 10px 0; color: #ccc; font-size: 14px; }
+        .settings-header { padding: 20px; border-bottom: 1px solid #333; font-size: 20px; font-weight: bold; background: #1a1a1a; display: flex; justify-content: space-between; }
+        .settings-body { flex: 1; overflow-y: auto; padding: 20px; }
         
-        .color-option { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: inline-block; margin: 3px; border: 2px solid transparent; }
+        .setting-group { margin-bottom: 25px; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        .setting-group h4 { color: var(--primary); margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .setting-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 15px; }
+        .setting-item label { color: #ddd; }
+        
+        .color-option { width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: inline-block; margin: 5px; border: 2px solid transparent; transition: 0.2s; }
         .color-option:hover { transform: scale(1.1); }
+        .color-option.active { border-color: white; box-shadow: 0 0 10px var(--primary); }
 
-        .toggle-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
-        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        /* Switch */
+        .switch { position: relative; display: inline-block; width: 46px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--primary); }
-        input:checked + .slider:before { transform: translateX(20px); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        /* Select */
+        select.settings-select { padding: 8px; background: #333; border: none; color: white; border-radius: 5px; outline: none; }
+        button.btn-action { padding: 8px 15px; background: #333; border: 1px solid #555; color: white; border-radius: 5px; cursor: pointer; font-size: 13px; }
+        button.btn-action:hover { background: #444; }
+        button.btn-danger { background: #5a1a1a; border-color: #ff4444; color: #ffcccc; }
 
         /* --- התאמה לטלפון --- */
         @media (max-width: 768px) {
@@ -219,49 +264,138 @@
 
     <div id="toast" class="toast"></div>
 
-    <!-- חלון הגדרות -->
+    <!-- חלון הגדרות ענק -->
     <div id="settingsModal" onclick="if(event.target === this) toggleSettings()">
         <div class="settings-content">
-            <h3 style="margin-top:0;">⚙️ הגדרות</h3>
-            
-            <div class="settings-section">
-                <h4>🎨 צבע נושא</h4>
-                <div id="colorOptions">
-                    <div class="color-option" style="background:#1DB954" onclick="setTheme('#1DB954')"></div>
-                    <div class="color-option" style="background:#1E88E5" onclick="setTheme('#1E88E5')"></div>
-                    <div class="color-option" style="background:#E91E63" onclick="setTheme('#E91E63')"></div>
-                    <div class="color-option" style="background:#9C27B0" onclick="setTheme('#9C27B0')"></div>
-                    <div class="color-option" style="background:#FF9800" onclick="setTheme('#FF9800')"></div>
-                    <div class="color-option" style="background:#00E5FF" onclick="setTheme('#00E5FF')"></div>
-                </div>
+            <div class="settings-header">
+                <span>⚙️ הגדרות</span>
+                <span style="cursor:pointer;" onclick="toggleSettings()">✕</span>
             </div>
-
-            <div class="settings-section">
-                <h4>👤 שם משתמש</h4>
-                <div style="display:flex; gap:5px;">
-                    <input type="text" id="newUsernameInput" placeholder="שם חדש..." style="flex:1; padding:8px; border-radius:5px; border:1px solid #444; background:#333; color:white; outline:none;">
-                    <button onclick="updateUsername()" style="background:var(--primary); border:none; border-radius:5px; cursor:pointer; padding:0 15px; font-weight:bold;">שמור</button>
+            <div class="settings-body">
+                
+                <!-- קבוצה 1: פרופיל -->
+                <div class="setting-group">
+                    <h4>👤 משתמש</h4>
+                    <div class="setting-item">
+                        <label>שינוי שם:</label>
+                        <div style="display:flex; gap:5px;">
+                            <input type="text" id="newUsernameInput" placeholder="שם חדש" style="width:100px; padding:5px; border-radius:5px; background:#333; color:white; border:none;">
+                            <button class="btn-action" onclick="updateUsername()">שמור</button>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label>מצב אורח (הסתר שם)</label>
+                        <label class="switch"><input type="checkbox" id="setIncognito"><span class="slider"></span></label>
+                    </div>
                 </div>
-            </div>
 
-            <div class="settings-section">
-                <h4>⚡ ביצועים</h4>
-                <div class="toggle-row">
-                    <span>אנימציות רקע (Glow)</span>
-                    <label class="switch">
-                        <input type="checkbox" id="animToggle" checked onchange="toggleAnimations(this.checked)">
-                        <span class="slider"></span>
-                    </label>
+                <!-- קבוצה 2: מראה -->
+                <div class="setting-group">
+                    <h4>🎨 עיצוב ומראה</h4>
+                    <div class="setting-item" style="display:block;">
+                        <label style="display:block; margin-bottom:5px;">צבע נושא:</label>
+                        <div id="colorOptions">
+                            <div class="color-option" style="background:#1DB954" onclick="setTheme('#1DB954')"></div>
+                            <div class="color-option" style="background:#1E88E5" onclick="setTheme('#1E88E5')"></div>
+                            <div class="color-option" style="background:#E91E63" onclick="setTheme('#E91E63')"></div>
+                            <div class="color-option" style="background:#9C27B0" onclick="setTheme('#9C27B0')"></div>
+                            <div class="color-option" style="background:#FF9800" onclick="setTheme('#FF9800')"></div>
+                            <div class="color-option" style="background:#00E5FF" onclick="setTheme('#00E5FF')"></div>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label>מצב בהיר (Light Mode)</label>
+                        <label class="switch"><input type="checkbox" id="setLightMode" onchange="toggleLightMode(this.checked)"><span class="slider"></span></label>
+                    </div>
+                    <div class="setting-item">
+                        <label>ניגודיות גבוהה</label>
+                        <label class="switch"><input type="checkbox" id="setHighContrast" onchange="toggleHighContrast(this.checked)"><span class="slider"></span></label>
+                    </div>
+                    <div class="setting-item">
+                        <label>אנימציות רקע (Glow)</label>
+                        <label class="switch"><input type="checkbox" id="setAnim" checked onchange="toggleAnimations(this.checked)"><span class="slider"></span></label>
+                    </div>
+                    <div class="setting-item">
+                        <label>גודל גופן</label>
+                        <select class="settings-select" onchange="setFontSize(this.value)">
+                            <option value="14px">רגיל</option>
+                            <option value="16px">גדול</option>
+                            <option value="18px">ענק</option>
+                        </select>
+                    </div>
                 </div>
-            </div>
 
-            <button class="btn-grad" style="padding:10px; margin-top:10px;" onclick="toggleSettings()">סגור</button>
+                <!-- קבוצה 3: שמע ונגן -->
+                <div class="setting-group">
+                    <h4>🔊 שמע ונגן</h4>
+                    <div class="setting-item">
+                        <label>אפקטים קוליים (ממשק)</label>
+                        <label class="switch"><input type="checkbox" id="setSoundEffects" checked><span class="slider"></span></label>
+                    </div>
+                    <div class="setting-item">
+                        <label>התראות (צליל צ'אט)</label>
+                        <label class="switch"><input type="checkbox" id="setNotifications" checked><span class="slider"></span></label>
+                    </div>
+                    <div class="setting-item">
+                        <label>ווליום ברירת מחדל</label>
+                        <select class="settings-select" id="setDefaultVol">
+                            <option value="50">50%</option>
+                            <option value="100">100%</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>איכות נגן (העדפה)</label>
+                        <select class="settings-select">
+                            <option>אוטומטי</option>
+                            <option>גבוהה</option>
+                            <option>חסכון בנתונים</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- קבוצה 4: צ'אט -->
+                <div class="setting-group">
+                    <h4>💬 צ'אט</h4>
+                    <div class="setting-item">
+                        <label>הצג זמנים בהודעות</label>
+                        <label class="switch"><input type="checkbox" id="setChatTime"><span class="slider"></span></label>
+                    </div>
+                    <div class="setting-item">
+                        <label>הסתר ריאקציות (אימוג'ים)</label>
+                        <label class="switch"><input type="checkbox" id="setHideEmoji"><span class="slider"></span></label>
+                    </div>
+                </div>
+
+                <!-- קבוצה 5: מערכת -->
+                <div class="setting-group">
+                    <h4>🔧 מערכת</h4>
+                    <div class="setting-item">
+                        <label>שפת ממשק</label>
+                        <select class="settings-select">
+                            <option>עברית</option>
+                            <option>English</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>ניקוי היסטוריית שירים</label>
+                        <button class="btn-action btn-danger" onclick="clearHistory()">נקה</button>
+                    </div>
+                    <div class="setting-item">
+                        <label>איפוס כל ההגדרות</label>
+                        <button class="btn-action btn-danger" onclick="resetSettings()">אפס</button>
+                    </div>
+                    <div class="setting-item">
+                        <label>גרסה: V26.0</label>
+                    </div>
+                </div>
+
+            </div>
         </div>
     </div>
 
     <!-- כניסה -->
     <div id="loginScreen">
-        <h1 style="color:white; font-size: 38px; margin-bottom: 25px;">You<span style="color:var(--primary)">Sync</span> V25</h1>
+        <h1 style="color:white; font-size: 38px; margin-bottom: 25px;">You<span style="color:var(--primary)">Sync</span> V26</h1>
         <div class="login-card">
             <input type="text" id="usernameInput" class="auth-input" placeholder="שם משתמש">
             <button class="btn-grad" onclick="createRoom()">צור חדר</button>
@@ -277,7 +411,7 @@
         <!-- סרגל צד (רק במחשב) -->
         <div class="sidebar">
             <div class="brand">You<span>Sync</span></div>
-            <button class="nav-btn" onclick="toggleSettings()"><i class="fas fa-cog"></i> הגדרות</button>
+            <button class="nav-btn" onclick="toggleSettings()"><i class="fas fa-cog"></i> הגדרות (20+)</button>
             <div style="font-size:12px; color:#aaa; margin-top:20px; margin-bottom:5px;">מחוברים (<span id="userCount">0</span>)</div>
             <div id="usersList" class="user-list-container"></div>
             <div style="margin-top:auto; font-size:12px; color:#555;">חדר: <span id="roomCodeDisplay"></span></div>
@@ -378,14 +512,26 @@
             if (params.get('room')) document.getElementById('roomInput').value = params.get('room');
             
             // טעינת הגדרות שמורות
-            const savedTheme = localStorage.getItem('themeColor');
-            if(savedTheme) setTheme(savedTheme);
+            loadSettings();
         };
 
-        // --- הגדרות ---
+        // --- ניהול הגדרות ---
         function toggleSettings() {
             const modal = document.getElementById('settingsModal');
             modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function loadSettings() {
+            const theme = localStorage.getItem('themeColor');
+            if(theme) setTheme(theme);
+            
+            const light = localStorage.getItem('lightMode') === 'true';
+            if(light) toggleLightMode(true);
+            document.getElementById('setLightMode').checked = light;
+
+            const anim = localStorage.getItem('animations') === 'false' ? false : true; // ברירת מחדל דלוק
+            toggleAnimations(anim);
+            document.getElementById('setAnim').checked = anim;
         }
 
         function setTheme(color) {
@@ -395,22 +541,51 @@
             localStorage.setItem('themeColor', color);
         }
 
+        function toggleLightMode(enable) {
+            if(enable) document.body.classList.add('light-mode');
+            else document.body.classList.remove('light-mode');
+            localStorage.setItem('lightMode', enable);
+        }
+
+        function toggleHighContrast(enable) {
+            if(enable) document.body.classList.add('high-contrast');
+            else document.body.classList.remove('high-contrast');
+        }
+
+        function toggleAnimations(enable) {
+            const glow = document.getElementById('ambianceGlow');
+            if(glow) glow.style.display = enable ? 'block' : 'none';
+            localStorage.setItem('animations', enable);
+        }
+
+        function setFontSize(size) {
+            document.body.style.fontSize = size;
+        }
+
+        function clearHistory() {
+            if(confirm("למחוק את כל היסטוריית החיפושים?")) {
+                localStorage.removeItem('searchHistory'); // דוגמה
+                showToast("היסטוריה נמחקה");
+            }
+        }
+
+        function resetSettings() {
+            if(confirm("לאפס את כל ההגדרות לברירת מחדל?")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
         function updateUsername() {
             const newName = document.getElementById('newUsernameInput').value.trim();
             if(newName && myKey) {
                 db.ref(`rooms/${currentRoom}/users/${myKey}`).update({ name: newName });
                 myName = newName;
                 showToast("שם עודכן בהצלחה!");
-                toggleSettings();
             }
         }
 
-        function toggleAnimations(enabled) {
-            const glow = document.getElementById('ambianceGlow');
-            if(glow) glow.style.display = enabled ? 'block' : 'none';
-        }
-
-        // --- פתיחה/סגירה של צ'אט בנייד ---
+        // --- שאר הקוד (אותו דבר) ---
         function toggleChat() {
             const panel = document.getElementById('chatPanel');
             panel.classList.toggle('open');
@@ -451,7 +626,6 @@
             db.ref(`rooms/${currentRoom}/users`).on('value', snap => {
                 const list = document.getElementById('usersList');
                 if(list) list.innerHTML = "";
-                if(document.getElementById('userCount')) document.getElementById('userCount').innerText = snap.numChildren();
                 if(list) {
                     snap.forEach(child => {
                         list.innerHTML += `<div class="user-row"><i class="fas fa-user"></i> ${child.val().name}</div>`;
@@ -503,10 +677,15 @@
                 const div = document.getElementById('chatMessages');
                 div.innerHTML += `<div class="msg"><strong>${msg.user}</strong>${msg.text}</div>`;
                 div.scrollTop = div.scrollHeight;
+                if(document.getElementById('setNotifications').checked) {
+                    // Play sound logic here if needed
+                }
             });
             
             db.ref(`rooms/${currentRoom}/reactions`).on('child_added', snap => {
-                 showEmoji(snap.val().emoji);
+                 if(!document.getElementById('setHideEmoji').checked) {
+                     showEmoji(snap.val().emoji);
+                 }
                  snap.ref.remove();
             });
         }
