@@ -3,32 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>YouSync PRO DJ</title>
+    <title>YouSync V31 - Hybrid System</title>
     
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <!-- אייקונים -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- פונט דיגיטלי -->
+    <!-- פונט למצב DJ -->
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --bg-color: #0a0a0a;
-            --deck-bg: #161616;
-            --text-color: #e0e0e0;
-            --accent-a: #00e5ff; /* ציאן ל-Deck A */
-            --accent-b: #ff4081; /* ורוד ל-Deck B */
-            --knob-color: #2a2a2a;
-            --screen-bg: #050505;
+            --primary: #1DB954;
+            --dark: #000000;
+            --panel: #121212;
+            --border: #282828;
+            --text: #ffffff;
+            
+            /* DJ Mode Colors */
+            --accent-a: #00e5ff; 
+            --accent-b: #ff4081;
         }
 
-        * { box-sizing: border-box; user-select: none; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body { 
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            background-color: var(--dark);
+            color: var(--text);
             font-family: 'Segoe UI', sans-serif; 
             margin: 0; padding: 0;
             height: 100vh;
@@ -36,185 +38,174 @@
             overflow: hidden;
         }
 
-        /* --- מסך כניסה (נשאר נקי) --- */
+        /* --- מסך כניסה --- */
         #loginScreen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: #000; z-index: 2000;
+            background: radial-gradient(circle at center, #1e1e1e, #000);
+            z-index: 3000;
         }
         .login-card {
-            background: #111; padding: 40px; border-radius: 10px; width: 300px; text-align: center; border: 1px solid #333;
+            background: rgba(30,30,30,0.9); padding: 40px; border-radius: 20px; width: 90%; max-width: 350px; text-align: center;
+            border: 1px solid var(--border);
         }
         input.auth-input {
-            width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #444; 
-            background: #222; color: white; text-align: center;
+            width: 100%; padding: 15px; margin: 10px 0; border-radius: 30px; border: 1px solid #333; 
+            background: #222; color: white; outline: none; text-align: center; font-size: 16px;
         }
-        .btn-enter {
-            background: #444; color: white; border: none; padding: 10px; width: 100%; cursor: pointer; font-weight: bold;
+        .btn-grad {
+            background: var(--primary); border: none; color: black; font-weight: bold; padding: 15px; width: 100%; border-radius: 30px;
+            cursor: pointer; font-size: 16px; margin-top: 10px; transition: 0.2s;
         }
-        .btn-enter:hover { background: #666; }
+        .btn-grad:hover { transform: scale(1.05); }
 
-        /* --- DJ Console Layout --- */
+        /* --- מצב רגיל (Standard UI) --- */
+        #standardUI {
+            display: grid;
+            grid-template-columns: 250px 1fr 320px; 
+            grid-template-rows: 1fr 90px;
+            height: 100%;
+            width: 100%;
+        }
+
+        /* סרגל צד */
+        .sidebar {
+            background: var(--dark); border-left: 1px solid var(--border);
+            padding: 20px; display: flex; flex-direction: column; gap: 15px;
+        }
+        .brand { font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 10px; }
+        .brand span { color: var(--primary); }
+        .nav-btn {
+            background: #222; border: 1px solid #333; color: white; text-align: right; font-size: 14px;
+            padding: 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; border-radius: 8px;
+            font-weight: bold; transition: 0.2s;
+        }
+        .nav-btn:hover { background: #333; border-color: var(--primary); }
+        .nav-btn.dj-mode-btn { background: linear-gradient(45deg, #00e5ff, #2979ff); border: none; color: black; }
+
+        /* תוכן מרכזי */
+        .main-content {
+            background: var(--panel); position: relative; overflow-y: auto; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .search-container { width: 100%; max-width: 600px; margin-bottom: 20px; position: relative; }
+        .search-input {
+            width: 100%; padding: 12px 40px 12px 15px; background: #2a2a2a; border: none; border-radius: 30px; color: white; outline: none;
+        }
+        .video-wrapper {
+            width: 100%; max-width: 800px; aspect-ratio: 16/9; background: black; border-radius: 12px; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px;
+        }
+        iframe { width: 100%; height: 100%; border: none; }
+        
+        .results-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;
+            width: 100%; max-width: 900px; padding-bottom: 100px;
+        }
+        .video-card { cursor: pointer; transition: 0.2s; background: #1a1a1a; padding: 8px; border-radius: 8px; }
+        .video-card:hover { background: #252525; transform: translateY(-3px); }
+        .card-img { width: 100%; border-radius: 6px; aspect-ratio: 16/9; object-fit: cover; }
+        .card-title { font-size: 12px; margin-top: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+        /* צ'אט */
+        .chat-panel {
+            background: var(--dark); border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .msg { background: #2a2a2a; padding: 8px 12px; border-radius: 10px; font-size: 13px; max-width: 85%; align-self: flex-start; }
+        .chat-input-area { padding: 10px; border-top: 1px solid var(--border); display: flex; gap: 5px; }
+        
+        /* נגן תחתון רגיל */
+        .bottom-bar {
+            grid-column: 1 / -1; background: #181818; border-top: 1px solid #333;
+            display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 1000;
+        }
+        .now-playing { display: flex; align-items: center; gap: 10px; width: 25%; }
+        .controls { display: flex; gap: 20px; align-items: center; }
+        .ctrl-btn { background: none; border: none; color: #bbb; font-size: 20px; cursor: pointer; }
+        .ctrl-btn.play { color: white; font-size: 35px; }
+
+        /* --- מצב DJ (מוסתר כברירת מחדל) --- */
         #djInterface {
-            display: flex; flex-direction: column; height: 100%; width: 100%;
+            display: none; /* מוסתר בהתחלה */
+            flex-direction: column; height: 100%; width: 100%;
+            background: #111;
         }
 
-        /* החלק העליון: הציוד */
-        .console-top {
-            flex: 2; display: flex; background: #111; border-bottom: 2px solid #333;
-            padding: 10px; gap: 5px; height: 60vh;
+        .dj-top-bar {
+            padding: 10px 20px; background: #000; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center;
+        }
+        .console-container {
+            flex: 2; display: flex; padding: 10px; gap: 5px; height: 55vh;
         }
 
-        /* DECK (הנגנים בצדדים) */
+        /* DECK Design */
         .deck {
-            flex: 3; background: var(--deck-bg); border-radius: 4px; border: 1px solid #333;
+            flex: 3; background: #161616; border-radius: 4px; border: 1px solid #333;
             display: flex; flex-direction: column; padding: 10px; position: relative;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
         }
         .deck.deck-a { border-top: 2px solid var(--accent-a); }
         .deck.deck-b { border-top: 2px solid var(--accent-b); }
+        .deck.drag-over { background: #222; border-color: white; }
 
-        /* מסך מידע בתוך הדק */
-        .deck-display {
-            background: var(--screen-bg); border: 1px solid #444; height: 80px; margin-bottom: 10px;
-            display: flex; justify-content: space-between; align-items: center; padding: 10px;
-            font-family: 'Share Tech Mono', monospace; color: var(--accent-a); position: relative; overflow: hidden;
+        .deck-screen {
+            background: #050505; border: 1px solid #444; height: 60px; margin-bottom: 10px;
+            display: flex; flex-direction: column; justify-content: center; padding: 5px;
+            font-family: 'Share Tech Mono', monospace; color: var(--accent-a);
         }
-        .deck-b .deck-display { color: var(--accent-b); }
+        .deck-b .deck-screen { color: var(--accent-b); }
         
-        .track-info-display { font-size: 14px; white-space: nowrap; overflow: hidden; max-width: 70%; }
-        .bpm-display { font-size: 24px; border: 1px solid #333; padding: 2px 5px; }
-
-        /* גל גול (Waveform) */
-        .waveform {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 30px;
-            background: rgba(255,255,255,0.1); display: flex; align-items: flex-end; gap: 1px; opacity: 0.5;
-        }
-        .bar { width: 3px; background: currentColor; animation: wave 0.5s infinite alternate; }
-        @keyframes wave { from { height: 20%; } to { height: 100%; } }
-
-        /* הגלגל (Jog Wheel) */
-        .jog-container {
-            flex: 1; display: flex; justify-content: center; align-items: center; position: relative;
-        }
+        .jog-container { flex: 1; display: flex; justify-content: center; align-items: center; }
         .jog-wheel {
-            width: 220px; height: 220px; border-radius: 50%;
+            width: 160px; height: 160px; border-radius: 50%;
             background: radial-gradient(circle, #222 0%, #000 100%);
-            border: 5px solid #333;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.8);
+            border: 4px solid #333; box-shadow: 0 5px 15px rgba(0,0,0,0.8);
             display: flex; align-items: center; justify-content: center;
-            position: relative; transition: transform 0.1s linear;
+            transition: transform 0.1s linear;
         }
-        .jog-top {
-            width: 180px; height: 180px; border-radius: 50%; background: #111;
-            border: 2px solid #444; display: flex; align-items: center; justify-content: center;
-        }
-        .jog-art { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; border-radius: 50%; }
-        
-        /* אנימציית סיבוב */
-        .rotating { animation: spin 2s linear infinite; }
-        .deck-b .rotating { animation-direction: reverse; }
+        .jog-wheel.rotating { animation: spin 2s linear infinite; border-color: white; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+        .jog-art { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; opacity: 0.6; }
 
-        /* כפתורי שליטה (CUE/PLAY) */
-        .transport-controls {
-            display: flex; gap: 15px; margin-top: 10px;
+        .transport-controls { display: flex; gap: 15px; margin-top: 10px; justify-content: center; }
+        .dj-btn {
+            width: 50px; height: 50px; border-radius: 50%; border: none; cursor: pointer;
+            box-shadow: 0 4px 0 #000; font-weight: bold; font-size: 18px; display: flex; align-items: center; justify-content: center;
         }
-        .btn-transport {
-            width: 60px; height: 60px; border-radius: 50%; border: none;
-            box-shadow: 0 4px 0 #000, 0 5px 10px rgba(0,0,0,0.5);
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-            font-size: 20px; font-weight: bold; color: black; transition: 0.1s;
-        }
-        .btn-transport:active { transform: translateY(4px); box-shadow: none; }
-        
-        .btn-cue { background: #ff9100; border: 4px solid #b36b00; }
-        .btn-play { background: #00e676; border: 4px solid #00a352; }
-        .btn-play.playing { background: #00ff80; box-shadow: 0 0 20px #00ff80; }
+        .dj-btn:active { transform: translateY(4px); box-shadow: none; }
+        .btn-cue { background: #ff9100; }
+        .btn-play { background: #00e676; }
 
-        /* MIXER (אמצע) */
+        /* Mixer */
         .mixer {
             flex: 2; background: #1a1a1a; border: 1px solid #333; border-radius: 4px;
-            display: flex; flex-direction: column; padding: 10px; align-items: center; gap: 10px;
+            display: flex; flex-direction: column; align-items: center; padding: 10px 0;
         }
+        .faders { display: flex; gap: 20px; height: 100px; align-items: flex-end; }
+        .fader-track { width: 8px; height: 100%; background: #000; border-radius: 4px; position: relative; }
+        .fader-handle { width: 24px; height: 40px; background: #444; position: absolute; bottom: 50%; left: -8px; border-radius: 2px; cursor: ns-resize; }
+
+        /* DJ Library (למטה) */
+        .dj-library {
+            flex: 1.5; background: #0a0a0a; border-top: 2px solid #333; display: flex; flex-direction: column;
+        }
+        .dj-search { padding: 10px; background: #111; display: flex; gap: 10px; }
         
-        .eq-section { display: flex; gap: 15px; }
-        .knob-wrapper { text-align: center; }
-        .knob-label { font-size: 10px; color: #888; margin-bottom: 5px; }
-        
-        /* כפתור מסתובב (Knob) */
-        .knob {
-            width: 40px; height: 40px; border-radius: 50%; background: #333;
-            border: 2px solid #555; position: relative; cursor: ns-resize;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-        }
-        .knob::after {
-            content: ''; position: absolute; top: 2px; left: 50%; width: 2px; height: 15px;
-            background: white; transform: translateX(-50%);
-        }
-
-        /* סליידרים (Faders) */
-        .faders { display: flex; gap: 20px; height: 150px; align-items: flex-end; width: 100%; justify-content: center; }
-        .fader-track {
-            width: 10px; height: 100%; background: #000; border-radius: 5px; position: relative; border: 1px solid #333;
-        }
-        .fader-handle {
-            width: 30px; height: 50px; background: linear-gradient(#444, #222);
-            border: 1px solid #555; position: absolute; left: -10px; bottom: 0;
-            border-radius: 2px; cursor: ns-resize; box-shadow: 0 2px 5px black;
-        }
-        .fader-handle::after {
-            content: ''; width: 20px; height: 2px; background: white;
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        }
-
-        /* Crossfader */
-        .crossfader-area { width: 80%; height: 40px; background: #111; border: 1px solid #333; border-radius: 4px; margin-top: auto; position: relative; }
-        .xfader-handle {
-            width: 40px; height: 100%; background: #555; position: absolute; left: 50%; transform: translateX(-50%); cursor: ew-resize; border: 1px solid #888;
-        }
-
-        /* --- Library (למטה) --- */
-        .library {
-            flex: 1.5; background: #0a0a0a; border-top: 2px solid #333;
-            display: flex; flex-direction: column; overflow: hidden;
-        }
-        
-        .library-header {
-            padding: 10px; background: #111; display: flex; gap: 10px; border-bottom: 1px solid #333;
-        }
-        .search-bar {
-            flex: 1; background: #222; border: 1px solid #444; color: white; padding: 5px 10px;
-            border-radius: 4px; outline: none;
-        }
-        .search-btn { background: #333; color: white; border: 1px solid #444; padding: 5px 15px; cursor: pointer; }
-
-        .song-list {
-            flex: 1; overflow-y: auto; padding: 10px;
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;
-        }
-
-        .song-card {
-            background: #161616; padding: 5px; border-radius: 4px; cursor: grab;
-            display: flex; gap: 10px; align-items: center; border: 1px solid #222;
-        }
-        .song-card:hover { background: #222; border-color: #444; }
-        .song-thumb { width: 50px; height: 50px; object-fit: cover; }
-        .song-details { font-size: 12px; overflow: hidden; }
-        .song-title { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        /* גרירה */
-        .deck.drag-over { border-color: white; background: #222; }
-
-        /* נגן יוטיוב נסתר */
-        .hidden-player { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-
-        /* התאמה לנייד */
+        /* רספונסיביות */
         @media (max-width: 768px) {
-            .console-top { flex-direction: column; height: auto; }
-            .mixer { display: none; } /* נסתיר מיקסר בנייד */
-            .deck { height: 300px; }
-            .jog-wheel { width: 150px; height: 150px; }
+            #standardUI {
+                display: flex; flex-direction: column;
+            }
+            .sidebar { display: none; } /* תפריט מוסתר בטלפון */
+            .chat-panel { display: none; } /* צ'אט מוסתר בטלפון (אפשר להוסיף כפתור) */
+            
+            /* התאמת DJ לנייד */
+            .console-container { flex-direction: column; height: auto; }
+            .mixer { display: none; }
+            .deck { height: 280px; margin-bottom: 10px; }
+            .jog-wheel { width: 120px; height: 120px; }
         }
 
     </style>
@@ -223,91 +214,123 @@
 
     <!-- כניסה -->
     <div id="loginScreen">
-        <h1 style="color:white;">PRO <span style="color:#00e5ff">DJ</span> CONSOLE</h1>
+        <h1 style="color:white; font-size: 35px;">You<span style="color:var(--primary)">Sync</span></h1>
         <div class="login-card">
-            <input type="text" id="usernameInput" class="auth-input" placeholder="DJ NAME">
-            <button class="btn-enter" onclick="createRoom()">START SESSION</button>
-            <p style="color:#555; margin:5px;">OR</p>
-            <input type="number" id="roomInput" class="auth-input" placeholder="ROOM CODE">
-            <button class="btn-enter" onclick="joinRoom()">JOIN SESSION</button>
+            <input type="text" id="usernameInput" class="auth-input" placeholder="שם משתמש">
+            <button class="btn-grad" onclick="createRoom()">צור חדר</button>
+            <p style="color:#666; margin:10px;">או</p>
+            <input type="number" id="roomInput" class="auth-input" placeholder="קוד חדר">
+            <button class="btn-grad" style="background:#333; color:white;" onclick="joinRoom()">הצטרף</button>
         </div>
     </div>
 
-    <!-- ממשק ה-DJ -->
-    <div id="djInterface" style="display:none;">
+    <!-- === ממשק רגיל (Standard) === -->
+    <div id="standardUI" style="display:none;">
         
-        <div class="console-top">
-            
+        <div class="sidebar">
+            <div class="brand">You<span>Sync</span></div>
+            <button class="nav-btn dj-mode-btn" onclick="switchMode('dj')"><i class="fas fa-compact-disc"></i> עבור למצב DJ</button>
+            <div style="margin-top:20px; font-size:12px; color:#aaa;">חדר: <span id="stdRoomCode"></span></div>
+            <div id="stdUserList" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="main-content">
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="חפש שיר...">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+
+            <div class="video-wrapper">
+                <div id="player"></div>
+            </div>
+
+            <h3 style="margin-top:20px;">🔥 להיטים חמים</h3>
+            <div id="resultsGrid" class="results-grid"></div>
+        </div>
+
+        <div class="chat-panel">
+            <div class="chat-header">💬 צ'אט</div>
+            <div id="chatMessages" class="chat-messages"></div>
+            <div class="chat-input-area">
+                <input type="text" id="chatInput" style="flex:1; background:#333; border:none; color:white; padding:8px; border-radius:20px; outline:none;" placeholder="הודעה...">
+                <button onclick="sendMessage()" style="background:var(--primary); border:none; border-radius:50%; width:30px; height:30px;">➤</button>
+            </div>
+        </div>
+
+        <div class="bottom-bar">
+            <div class="now-playing">
+                <img id="npThumb" src="https://via.placeholder.com/50" style="width:40px; border-radius:4px;">
+                <div>
+                    <div id="npTitle" style="font-size:13px; font-weight:bold;">לא מנגן</div>
+                    <div style="font-size:11px; color:#aaa;">YouSync</div>
+                </div>
+            </div>
+            <div class="controls">
+                <button class="ctrl-btn play" onclick="togglePlay()"><i class="fas fa-play" id="playIcon"></i></button>
+            </div>
+            <div></div>
+        </div>
+    </div>
+
+    <!-- === ממשק DJ (מוסתר) === -->
+    <div id="djInterface">
+        <div class="dj-top-bar">
+            <div style="font-weight:bold; font-family:'Share Tech Mono'; font-size:20px;">PRO <span style="color:#00e5ff">DJ</span> CONSOLE</div>
+            <button onclick="switchMode('standard')" style="background:#333; color:white; border:1px solid #555; padding:5px 15px; cursor:pointer;">EXIT DJ MODE</button>
+        </div>
+
+        <div class="console-container">
             <!-- DECK A -->
             <div class="deck deck-a" id="deckA" ondrop="drop(event, 'A')" ondragover="allowDrop(event)">
-                <div class="deck-display">
-                    <div class="track-info-display" id="titleA">NO TRACK LOADED</div>
-                    <div class="bpm-display">128</div>
-                    <div class="waveform" style="color:var(--accent-a)">
-                        <div class="bar" style="height:40%"></div><div class="bar" style="height:70%"></div><div class="bar" style="height:30%"></div>
-                        <!-- ...עוד ברים יווצרו ב-JS... -->
-                    </div>
+                <div class="deck-screen">
+                    <div style="font-size:12px; color:#aaa;">DECK A</div>
+                    <div id="titleA" style="white-space:nowrap; overflow:hidden;">NO TRACK</div>
                 </div>
                 <div class="jog-container">
                     <div class="jog-wheel" id="jogA">
-                        <div class="jog-top"><img id="artA" class="jog-art" src=""></div>
+                        <img id="artA" class="jog-art" src="">
                     </div>
                 </div>
                 <div class="transport-controls">
-                    <button class="btn-transport btn-cue" onclick="cue('A')">CUE</button>
-                    <button class="btn-transport btn-play" id="playA" onclick="togglePlay('A')">▶</button>
+                    <button class="dj-btn btn-cue" onclick="cue('A')">CUE</button>
+                    <button class="dj-btn btn-play" id="btnPlayA" onclick="togglePlay('A')">▶</button>
                 </div>
             </div>
 
             <!-- MIXER -->
             <div class="mixer">
-                <div class="knob-wrapper"><div class="knob"></div><div class="knob-label">HIGH</div></div>
-                <div class="knob-wrapper"><div class="knob"></div><div class="knob-label">MID</div></div>
-                <div class="knob-wrapper"><div class="knob"></div><div class="knob-label">LOW</div></div>
-                
+                <div style="color:#555; font-size:10px;">MASTER</div>
                 <div class="faders">
-                    <div class="fader-track"><div class="fader-handle" style="bottom:80%"></div></div> <!-- Vol A -->
-                    <div class="fader-track"><div class="fader-handle" style="bottom:0%"></div></div>  <!-- Vol B -->
-                </div>
-
-                <div class="crossfader-area">
-                    <div class="xfader-handle"></div>
+                    <div class="fader-track"><div class="fader-handle" style="bottom:80%"></div></div>
+                    <div class="fader-track"><div class="fader-handle" style="bottom:0%"></div></div>
                 </div>
             </div>
 
             <!-- DECK B -->
             <div class="deck deck-b" id="deckB" ondrop="drop(event, 'B')" ondragover="allowDrop(event)">
-                <div class="deck-display">
-                    <div class="track-info-display" id="titleB">NO TRACK LOADED</div>
-                    <div class="bpm-display">124</div>
-                    <div class="waveform" style="color:var(--accent-b)"></div>
+                <div class="deck-screen">
+                    <div style="font-size:12px; color:#aaa;">DECK B</div>
+                    <div id="titleB" style="white-space:nowrap; overflow:hidden;">NO TRACK</div>
                 </div>
                 <div class="jog-container">
                     <div class="jog-wheel" id="jogB">
-                        <div class="jog-top"><img id="artB" class="jog-art" src=""></div>
+                        <img id="artB" class="jog-art" src="">
                     </div>
                 </div>
                 <div class="transport-controls">
-                    <button class="btn-transport btn-cue" onclick="cue('B')">CUE</button>
-                    <button class="btn-transport btn-play" id="playB" onclick="togglePlay('B')">▶</button>
+                    <button class="dj-btn btn-cue" onclick="cue('B')">CUE</button>
+                    <button class="dj-btn btn-play" id="btnPlayB" onclick="togglePlay('B')">▶</button>
                 </div>
             </div>
-
         </div>
 
-        <!-- ספריית שירים -->
-        <div class="library">
-            <div class="library-header">
-                <input type="text" id="searchInput" class="search-bar" placeholder="SEARCH YOUTUBE...">
-                <button class="search-btn" onclick="searchVideos()">GO</button>
-                <div style="margin-right:auto; color:#666;">ROOM: <span id="roomCode"></span></div>
+        <div class="dj-library">
+            <div class="dj-search">
+                <input type="text" id="djSearchInput" placeholder="SEARCH TRACKS..." style="flex:1; background:#222; border:1px solid #444; color:white; padding:5px;">
+                <button onclick="searchVideosDJ()" style="background:#333; color:white; border:1px solid #444; cursor:pointer;">GO</button>
             </div>
-            <div id="songList" class="song-list"></div>
+            <div id="djSongList" class="results-grid" style="padding:10px;"></div>
         </div>
-
-        <!-- נגן אמיתי מוסתר -->
-        <div class="hidden-player" id="player"></div>
-
     </div>
 
     <script>
@@ -324,15 +347,32 @@
         try { firebase.initializeApp(firebaseConfig); } catch(e){}
         const db = firebase.database();
 
-        let player;
-        let currentRoom = null;
-        let deckA_Data = null; // מידע על שיר בדק A
-        let deckB_Data = null; // מידע על שיר בדק B
-        let activeDeck = 'A';  // מי מנגן כרגע?
+        let player, isSyncing = false, currentRoom = null, myName = "";
+        let deckA_Data = null, deckB_Data = null, activeDeck = 'A';
+
+        // --- ניהול מצבים (רגיל / DJ) ---
+        function switchMode(mode) {
+            if (mode === 'dj') {
+                document.getElementById('standardUI').style.display = 'none';
+                document.getElementById('djInterface').style.display = 'flex';
+                // טען שירים ל-DJ
+                searchAndRender("Hits 2025", 'djSongList', true);
+            } else {
+                document.getElementById('djInterface').style.display = 'none';
+                document.getElementById('standardUI').style.display = (window.innerWidth > 768) ? 'grid' : 'flex';
+                // החזרת הנגן למיקום הרגיל
+                const wrapper = document.querySelector('.video-wrapper');
+                wrapper.appendChild(document.getElementById('player'));
+            }
+        }
 
         // --- כניסה ---
-        function createRoom() { enterRoom(Math.floor(1000 + Math.random() * 9000)); }
-        function joinRoom() { 
+        function createRoom() {
+            myName = document.getElementById('usernameInput').value || "Admin";
+            enterRoom(Math.floor(1000 + Math.random() * 9000));
+        }
+        function joinRoom() {
+            myName = document.getElementById('usernameInput').value || "Guest";
             const code = document.getElementById('roomInput').value;
             if(code) enterRoom(code);
         }
@@ -340,161 +380,70 @@
         function enterRoom(code) {
             currentRoom = code;
             document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('djInterface').style.display = 'flex';
-            document.getElementById('roomCode').innerText = code;
+            document.getElementById('standardUI').style.display = (window.innerWidth > 768) ? 'grid' : 'flex';
+            document.getElementById('stdRoomCode').innerText = code;
 
             loadYoutubePlayer();
-            loadHomePage();
+            loadHomePage(); 
+
+            const userRef = db.ref(`rooms/${code}/users`).push();
+            userRef.set({ name: myName });
+            userRef.onDisconnect().remove();
+
             setupListeners();
-            generateWaveforms(); // יצירת גלים
-        }
-
-        // --- גרירה ושחרור (Drag & Drop) ---
-        function allowDrop(ev) {
-            ev.preventDefault();
-            ev.currentTarget.classList.add('drag-over');
-        }
-
-        function leaveDrop(ev) {
-            ev.currentTarget.classList.remove('drag-over');
-        }
-
-        function drag(ev, id, title, thumb) {
-            ev.dataTransfer.setData("id", id);
-            ev.dataTransfer.setData("title", title);
-            ev.dataTransfer.setData("thumb", thumb);
-        }
-
-        function drop(ev, deck) {
-            ev.preventDefault();
-            ev.currentTarget.classList.remove('drag-over');
-            
-            const id = ev.dataTransfer.getData("id");
-            const title = ev.dataTransfer.getData("title");
-            const thumb = ev.dataTransfer.getData("thumb");
-
-            loadDeck(deck, id, title, thumb);
-        }
-
-        // טעינת דק
-        function loadDeck(deck, id, title, thumb) {
-            const data = { id, title, thumb };
-            
-            // עדכון ויזואלי מקומי
-            document.getElementById(`title${deck}`).innerText = title;
-            document.getElementById(`art${deck}`).src = thumb;
-            
-            // שמירה בזיכרון
-            if (deck === 'A') deckA_Data = data;
-            else deckB_Data = data;
-
-            // עדכון פיירבייס (כדי שכולם יראו מה טעון)
-            db.ref(`rooms/${currentRoom}/deck${deck}`).set(data);
-        }
-
-        // --- נגינה ---
-        function togglePlay(deck) {
-            if (deck !== activeDeck) {
-                // החלפת דק פעיל
-                activeDeck = deck;
-                const data = (deck === 'A') ? deckA_Data : deckB_Data;
-                if (!data) return alert("Load a track first!");
-                
-                // שליחה לנגן
-                db.ref(`rooms/${currentRoom}/current_song`).set({
-                    videoId: data.id, title: data.title, status: 1
-                });
-            } else {
-                // Pause/Play רגיל
-                // לוגיקת עצירה...
-            }
-        }
-
-        function cue(deck) {
-            // אפקט עצירה ואיפוס
-            const jog = document.getElementById(`jog${deck}`);
-            jog.classList.remove('rotating');
-            // אם זה הדק הפעיל - עצור את הנגן הראשי
-            if (deck === activeDeck && player) {
-                player.seekTo(0);
-                player.pauseVideo();
-            }
         }
 
         // --- Firebase Listeners ---
         function setupListeners() {
-            // האזנה לשינוי שיר (מנגן בפועל)
+            // משתמשים
+            db.ref(`rooms/${currentRoom}/users`).on('value', snap => {
+                const list = document.getElementById('stdUserList');
+                list.innerHTML = "";
+                snap.forEach(child => list.innerHTML += `<div>👤 ${child.val().name}</div>`);
+            });
+
+            // שיר נוכחי
             db.ref(`rooms/${currentRoom}/current_song`).on('value', snap => {
                 const data = snap.val();
                 if (!data) return;
-
-                // עדכון גלגלים
+                
+                // עדכון UI רגיל
+                document.getElementById('npTitle').innerText = data.title;
+                document.getElementById('npThumb').src = data.thumbnail || "https://via.placeholder.com/50";
+                
+                // עדכון UI DJ
                 const jogA = document.getElementById('jogA');
                 const jogB = document.getElementById('jogB');
-                const btnA = document.getElementById('playA');
-                const btnB = document.getElementById('playB');
-
-                // איפוס
                 jogA.classList.remove('rotating'); jogB.classList.remove('rotating');
-                btnA.classList.remove('playing'); btnB.classList.remove('playing');
 
-                // הפעלת הדק הנכון
-                if (deckA_Data && deckA_Data.id === data.videoId) {
-                    if(data.status === 1) { jogA.classList.add('rotating'); btnA.classList.add('playing'); }
-                } else if (deckB_Data && deckB_Data.id === data.videoId) {
-                    if(data.status === 1) { jogB.classList.add('rotating'); btnB.classList.add('playing'); }
-                }
+                if (deckA_Data && deckA_Data.id === data.videoId && data.status === 1) jogA.classList.add('rotating');
+                if (deckB_Data && deckB_Data.id === data.videoId && data.status === 1) jogB.classList.add('rotating');
 
                 if (player && player.loadVideoById && player.getVideoData().video_id !== data.videoId) {
+                    isSyncing = true;
                     player.loadVideoById(data.videoId);
+                    setTimeout(() => isSyncing = false, 1500);
+                }
+
+                if (data.status === 1) {
+                    document.getElementById('playIcon').className = "fas fa-pause";
+                    if (player && player.playVideo) player.playVideo();
+                } else {
+                    document.getElementById('playIcon').className = "fas fa-play";
+                    if (player && player.pauseVideo) player.pauseVideo();
                 }
             });
 
-            // האזנה לטעינת דקים (אם מישהו אחר גרר שיר)
-            db.ref(`rooms/${currentRoom}/deckA`).on('value', snap => {
-                if(snap.val()) loadDeck('A', snap.val().id, snap.val().title, snap.val().thumb);
-            });
-            db.ref(`rooms/${currentRoom}/deckB`).on('value', snap => {
-                if(snap.val()) loadDeck('B', snap.val().id, snap.val().title, snap.val().thumb);
-            });
-        }
-
-        // --- חיפוש וספרייה ---
-        async function loadHomePage() { searchAndRender("Techno Mix 2025"); }
-        
-        async function searchVideos() {
-            const q = document.getElementById('searchInput').value;
-            if(q) searchAndRender(q);
-        }
-
-        async function searchAndRender(q) {
-            const list = document.getElementById('songList');
-            list.innerHTML = "LOADING...";
-            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=20&q=${encodeURIComponent(q)}&key=${YOUTUBE_API_KEY}`;
-            const res = await fetch(url);
-            const data = await res.json();
-            
-            list.innerHTML = "";
-            data.items.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'song-card';
-                div.draggable = true;
-                // אירוע גרירה
-                div.ondragstart = (e) => drag(e, item.id.videoId, item.snippet.title, item.snippet.thumbnails.default.url);
-                // לחיצה רגילה (לטלפון) - טוענת ל-A אוטומטית
-                div.onclick = () => loadDeck('A', item.id.videoId, item.snippet.title, item.snippet.thumbnails.default.url);
-                
-                div.innerHTML = `
-                    <img src="${item.snippet.thumbnails.default.url}" class="song-thumb">
-                    <div class="song-details">
-                        <div class="song-title">${item.snippet.title}</div>
-                    </div>
-                `;
-                list.appendChild(div);
+            // צ'אט
+            db.ref(`rooms/${currentRoom}/chat`).limitToLast(20).on('child_added', snap => {
+                const msg = snap.val();
+                const div = document.getElementById('chatMessages');
+                div.innerHTML += `<div class="msg"><strong>${msg.user}</strong>${msg.text}</div>`;
+                div.scrollTop = div.scrollHeight;
             });
         }
 
-        // --- נגן יוטיוב (מוסתר) ---
+        // --- נגן ---
         function loadYoutubePlayer() {
             var tag = document.createElement('script');
             tag.src = "https://www.youtube.com/iframe_api";
@@ -503,22 +452,116 @@
         }
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
-                height: '100', width: '100', videoId: '', 
-                playerVars: { 'autoplay': 1, 'controls': 0 },
+                height: '100%', width: '100%', videoId: '', 
+                host: 'https://www.youtube-nocookie.com',
+                playerVars: { 'autoplay': 1, 'controls': 0, 'rel': 0, 'modestbranding': 1, 'playsinline': 1 },
+                events: { 'onStateChange': onPlayerStateChange }
+            });
+        }
+        function onPlayerStateChange(event) {
+            if (isSyncing || !currentRoom) return;
+            if (event.data === 1 || event.data === 2) {
+                db.ref(`rooms/${currentRoom}/current_song`).update({ status: event.data });
+            }
+        }
+
+        // --- פונקציות DJ ---
+        function allowDrop(ev) { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); }
+        function drag(ev, id, title, thumb) {
+            ev.dataTransfer.setData("id", id);
+            ev.dataTransfer.setData("title", title);
+            ev.dataTransfer.setData("thumb", thumb);
+        }
+        function drop(ev, deck) {
+            ev.preventDefault(); ev.currentTarget.classList.remove('drag-over');
+            const id = ev.dataTransfer.getData("id");
+            const title = ev.dataTransfer.getData("title");
+            const thumb = ev.dataTransfer.getData("thumb");
+            loadDeck(deck, id, title, thumb);
+        }
+
+        function loadDeck(deck, id, title, thumb) {
+            const data = { id, title, thumb };
+            document.getElementById(`title${deck}`).innerText = title;
+            document.getElementById(`art${deck}`).src = thumb;
+            if(deck === 'A') deckA_Data = data; else deckB_Data = data;
+        }
+
+        function togglePlay(deck) {
+            if (deck) { // הפעלה מ-DJ
+                const data = (deck === 'A') ? deckA_Data : deckB_Data;
+                if (!data) return;
+                db.ref(`rooms/${currentRoom}/current_song`).set({ videoId: data.id, title: data.title, thumbnail: data.thumb, status: 1 });
+            } else { // הפעלה רגילה
+                if(!player) return;
+                const newStatus = (player.getPlayerState() === 1) ? 2 : 1;
+                db.ref(`rooms/${currentRoom}/current_song`).update({ status: newStatus });
+            }
+        }
+
+        function cue(deck) {
+            if(player) { player.seekTo(0); player.pauseVideo(); }
+        }
+
+        // --- חיפוש וגריד ---
+        async function loadHomePage() { searchAndRender("להיטים ישראלים 2025", 'resultsGrid', false); }
+        
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchAndRender(e.target.value, 'resultsGrid', false);
+        });
+
+        function searchVideosDJ() {
+            const q = document.getElementById('djSearchInput').value;
+            if(q) searchAndRender(q, 'djSongList', true);
+        }
+
+        async function searchAndRender(query, elementId, isDraggable) {
+            const grid = document.getElementById(elementId);
+            grid.innerHTML = '<p>טוען...</p>';
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=20&q=${encodeURIComponent(query)}&key=${YOUTUBE_API_KEY}`;
+            
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                grid.innerHTML = "";
+                
+                data.items.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'video-card';
+                    
+                    if(isDraggable) {
+                        div.draggable = true;
+                        div.ondragstart = (e) => drag(e, item.id.videoId, item.snippet.title, item.snippet.thumbnails.default.url);
+                        // תמיכה בטלפון למצב DJ (לחיצה במקום גרירה)
+                        div.onclick = () => {
+                            if(confirm("טען לדק A?")) loadDeck('A', item.id.videoId, item.snippet.title, item.snippet.thumbnails.default.url);
+                        }
+                    } else {
+                        div.onclick = () => playVideo(item.id.videoId, item.snippet.title, item.snippet.thumbnails.medium.url);
+                    }
+
+                    div.innerHTML = `
+                        <img src="${item.snippet.thumbnails.medium.url}" class="card-img">
+                        <div class="card-title">${item.snippet.title}</div>
+                    `;
+                    grid.appendChild(div);
+                });
+            } catch(e) { console.error(e); }
+        }
+
+        function playVideo(id, title, thumb) {
+            db.ref(`rooms/${currentRoom}/current_song`).set({
+                videoId: id, title: title, thumbnail: thumb, status: 1
             });
         }
 
-        // יצירת גלים יפים ב-CSS
-        function generateWaveforms() {
-            const waves = document.querySelectorAll('.waveform');
-            waves.forEach(w => {
-                let html = '';
-                for(let i=0; i<40; i++) {
-                    const h = Math.floor(Math.random() * 80 + 20);
-                    html += `<div class="bar" style="height:${h}%"></div>`;
-                }
-                w.innerHTML = html;
-            });
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const txt = input.value;
+            if(txt) {
+                db.ref(`rooms/${currentRoom}/chat`).push({ user: myName, text: txt });
+                input.value = "";
+            }
         }
 
     </script>
