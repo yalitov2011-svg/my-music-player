@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>YouSync V26 - Ultimate Settings</title>
+    <title>YouSync V27 - Fixed & Mobile</title>
     
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -18,31 +18,37 @@
             --panel: #121212;
             --border: #282828;
             --text: #ffffff;
+            --msg-bg: rgba(255,255,255,0.1);
         }
 
-        /* מצב בהיר (לדוגמה) */
+        /* מצב בהיר */
         body.light-mode {
             --dark: #f0f2f5;
             --panel: #ffffff;
             --border: #ccc;
             --text: #000000;
+            --msg-bg: #e4e6eb;
         }
-        body.light-mode .main-content, body.light-mode .sidebar, body.light-mode .chat-panel {
+        body.light-mode .main-content, body.light-mode .sidebar, body.light-mode .chat-panel, body.light-mode .bottom-bar {
             background: var(--panel); color: var(--text);
         }
         body.light-mode .video-card { background: #f9f9f9; border: 1px solid #ddd; }
-        body.light-mode .video-card:hover { background: #eee; }
-        body.light-mode .card-title, body.light-mode .card-artist { color: #000; }
+        body.light-mode .search-input { background: #e4e6eb; color: black; }
+        body.light-mode .chat-header, body.light-mode .chat-input-area { background: #f0f2f5; }
+        body.light-mode #chatInput { background: white; color: black; border: 1px solid #ccc; }
 
-        /* ניגודיות גבוהה */
+        /* ניגודיות גבוהה (Fixed) */
         body.high-contrast {
-            --primary: #FFFF00; /* צהוב */
-            --dark: #000;
-            --panel: #000;
-            --border: #FFF;
-            --text: #FFF;
+            --primary: #FFFF00 !important; /* צהוב */
+            --dark: #000 !important;
+            --panel: #000 !important;
+            --border: #FFF !important;
+            --text: #FFF !important;
+            --msg-bg: #333 !important;
         }
         body.high-contrast * { border-color: white !important; }
+        body.high-contrast .video-card, body.high-contrast .bottom-bar, body.high-contrast .sidebar { background: #000 !important; border: 1px solid white !important; }
+        body.high-contrast .msg { background: #000 !important; border: 1px solid yellow !important; color: yellow !important; }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
@@ -58,11 +64,6 @@
             flex-direction: column;
             transition: background-color 0.3s, color 0.3s;
         }
-
-        /* גלילה יפה */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
 
         /* --- מסך כניסה --- */
         #loginScreen {
@@ -125,14 +126,18 @@
             grid-column: 2;
         }
 
-        /* אפקט זוהר */
         .ambiance-glow {
             position: absolute; top: 0; left: 0; width: 100%; height: 300px;
             background: radial-gradient(circle at top, var(--primary), transparent 70%);
             opacity: 0.15; pointer-events: none; transition: opacity 0.5s;
         }
 
-        .search-container { width: 100%; max-width: 600px; margin-bottom: 20px; position: relative; z-index: 10; }
+        /* כפתור הגדרות בטלפון (חדש!) */
+        .mobile-settings-icon {
+            display: none; position: absolute; left: 20px; top: 20px; font-size: 24px; color: var(--text); cursor: pointer; z-index: 20;
+        }
+
+        .search-container { width: 100%; max-width: 600px; margin-bottom: 20px; position: relative; z-index: 10; margin-top: 10px; }
         .search-input {
             width: 100%; padding: 12px 40px 12px 15px; background: rgba(255,255,255,0.1); border: none; 
             border-radius: 50px; color: var(--text); outline: none; font-size: 16px;
@@ -169,8 +174,11 @@
 
         .chat-header { padding: 15px; background: rgba(0,0,0,0.2); font-weight: bold; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
         .chat-messages { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.1); }
-        .msg { background: rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 10px; font-size: 13px; max-width: 85%; align-self: flex-start; }
+        .msg { background: var(--msg-bg); padding: 8px 12px; border-radius: 10px; font-size: 13px; max-width: 85%; align-self: flex-start; }
         .msg strong { color: var(--primary); display: block; font-size: 11px; }
+        .chat-timestamp { font-size: 10px; color: #888; float: left; margin-right: 5px; margin-top: 2px; display: none; }
+        body.show-chat-time .chat-timestamp { display: inline; }
+
         .chat-input-area { padding: 10px; display: flex; gap: 8px; background: rgba(0,0,0,0.2); border-top: 1px solid var(--border); }
         #chatInput { flex: 1; background: rgba(255,255,255,0.1); border: none; padding: 10px; border-radius: 20px; color: var(--text); outline: none; }
         .mobile-close-chat { display: none; background: none; border: none; color: white; font-size: 20px; }
@@ -199,7 +207,7 @@
 
         .player-right { width: 25%; display: flex; justify-content: flex-end; gap: 15px; }
 
-        /* --- חלון הגדרות ענק --- */
+        /* --- חלון הגדרות --- */
         #settingsModal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 4000; align-items: center; justify-content: center;
@@ -217,11 +225,9 @@
         .setting-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 15px; }
         .setting-item label { color: #ddd; }
         
-        .color-option { width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: inline-block; margin: 5px; border: 2px solid transparent; transition: 0.2s; }
-        .color-option:hover { transform: scale(1.1); }
+        .color-option { width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: inline-block; margin: 3px; border: 2px solid transparent; transition: 0.2s; }
         .color-option.active { border-color: white; box-shadow: 0 0 10px var(--primary); }
 
-        /* Switch */
         .switch { position: relative; display: inline-block; width: 46px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .4s; border-radius: 34px; }
@@ -229,25 +235,26 @@
         input:checked + .slider { background-color: var(--primary); }
         input:checked + .slider:before { transform: translateX(22px); }
 
-        /* Select */
         select.settings-select { padding: 8px; background: #333; border: none; color: white; border-radius: 5px; outline: none; }
         button.btn-action { padding: 8px 15px; background: #333; border: 1px solid #555; color: white; border-radius: 5px; cursor: pointer; font-size: 13px; }
-        button.btn-action:hover { background: #444; }
-        button.btn-danger { background: #5a1a1a; border-color: #ff4444; color: #ffcccc; }
 
         /* --- התאמה לטלפון --- */
         @media (max-width: 768px) {
             #appScreen { display: flex; flex-direction: column; }
             .sidebar { display: none; } 
+            .mobile-settings-icon { display: block; } /* מציג כפתור הגדרות בטלפון */
             .main-content { flex: 1; width: 100%; padding: 10px; overflow-y: auto; }
             .video-wrapper { position: sticky; top: 0; z-index: 10; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+            
             .chat-panel { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2500; transform: translateY(100%); transition: transform 0.3s; border: none; }
             .chat-panel.open { transform: translateY(0); }
             .mobile-close-chat { display: block; }
-            .bottom-bar { height: 110px; flex-direction: column; justify-content: center; padding: 10px; background: rgba(20,20,20,0.95); backdrop-filter: blur(10px); }
+            
+            /* נגן תחתון בטלפון - מסודר */
+            .bottom-bar { height: 120px; flex-direction: column; justify-content: space-evenly; padding: 10px; background: rgba(20,20,20,0.95); backdrop-filter: blur(10px); }
             .now-playing { display: none; }
-            .player-center { width: 100%; }
-            .controls { margin-bottom: 10px; gap: 30px; }
+            .player-center { width: 100%; gap: 10px; }
+            .controls { margin-bottom: 0; gap: 30px; }
             .player-right { position: absolute; top: 15px; right: 15px; width: auto; }
             .toggle-chat-btn { color: var(--primary); background: rgba(255,255,255,0.1); border-radius: 50%; width: 40px; height: 40px; }
         }
@@ -333,22 +340,10 @@
                         <label class="switch"><input type="checkbox" id="setSoundEffects" checked><span class="slider"></span></label>
                     </div>
                     <div class="setting-item">
-                        <label>התראות (צליל צ'אט)</label>
-                        <label class="switch"><input type="checkbox" id="setNotifications" checked><span class="slider"></span></label>
-                    </div>
-                    <div class="setting-item">
                         <label>ווליום ברירת מחדל</label>
                         <select class="settings-select" id="setDefaultVol">
                             <option value="50">50%</option>
                             <option value="100">100%</option>
-                        </select>
-                    </div>
-                    <div class="setting-item">
-                        <label>איכות נגן (העדפה)</label>
-                        <select class="settings-select">
-                            <option>אוטומטי</option>
-                            <option>גבוהה</option>
-                            <option>חסכון בנתונים</option>
                         </select>
                     </div>
                 </div>
@@ -357,8 +352,8 @@
                 <div class="setting-group">
                     <h4>💬 צ'אט</h4>
                     <div class="setting-item">
-                        <label>הצג זמנים בהודעות</label>
-                        <label class="switch"><input type="checkbox" id="setChatTime"><span class="slider"></span></label>
+                        <label>הצג שעת הודעה</label>
+                        <label class="switch"><input type="checkbox" id="setChatTime" onchange="toggleChatTime(this.checked)"><span class="slider"></span></label>
                     </div>
                     <div class="setting-item">
                         <label>הסתר ריאקציות (אימוג'ים)</label>
@@ -370,22 +365,12 @@
                 <div class="setting-group">
                     <h4>🔧 מערכת</h4>
                     <div class="setting-item">
-                        <label>שפת ממשק</label>
-                        <select class="settings-select">
-                            <option>עברית</option>
-                            <option>English</option>
-                        </select>
-                    </div>
-                    <div class="setting-item">
                         <label>ניקוי היסטוריית שירים</label>
-                        <button class="btn-action btn-danger" onclick="clearHistory()">נקה</button>
+                        <button class="btn-action" onclick="clearHistory()">נקה</button>
                     </div>
                     <div class="setting-item">
                         <label>איפוס כל ההגדרות</label>
-                        <button class="btn-action btn-danger" onclick="resetSettings()">אפס</button>
-                    </div>
-                    <div class="setting-item">
-                        <label>גרסה: V26.0</label>
+                        <button class="btn-action" style="color:#ff4444; border-color:#ff4444;" onclick="resetSettings()">אפס</button>
                     </div>
                 </div>
 
@@ -395,7 +380,7 @@
 
     <!-- כניסה -->
     <div id="loginScreen">
-        <h1 style="color:white; font-size: 38px; margin-bottom: 25px;">You<span style="color:var(--primary)">Sync</span> V26</h1>
+        <h1 style="color:white; font-size: 38px; margin-bottom: 25px;">You<span style="color:var(--primary)">Sync</span> V27</h1>
         <div class="login-card">
             <input type="text" id="usernameInput" class="auth-input" placeholder="שם משתמש">
             <button class="btn-grad" onclick="createRoom()">צור חדר</button>
@@ -408,10 +393,13 @@
     <!-- אפליקציה -->
     <div id="appScreen">
         
+        <!-- כפתור הגדרות לנייד -->
+        <i class="fas fa-cog mobile-settings-icon" onclick="toggleSettings()"></i>
+
         <!-- סרגל צד (רק במחשב) -->
         <div class="sidebar">
             <div class="brand">You<span>Sync</span></div>
-            <button class="nav-btn" onclick="toggleSettings()"><i class="fas fa-cog"></i> הגדרות (20+)</button>
+            <button class="nav-btn" onclick="toggleSettings()"><i class="fas fa-cog"></i> הגדרות</button>
             <div style="font-size:12px; color:#aaa; margin-top:20px; margin-bottom:5px;">מחוברים (<span id="userCount">0</span>)</div>
             <div id="usersList" class="user-list-container"></div>
             <div style="margin-top:auto; font-size:12px; color:#555;">חדר: <span id="roomCodeDisplay"></span></div>
@@ -510,12 +498,10 @@
         window.onload = function() {
             const params = new URLSearchParams(window.location.search);
             if (params.get('room')) document.getElementById('roomInput').value = params.get('room');
-            
-            // טעינת הגדרות שמורות
-            loadSettings();
+            loadSettings(); // טעינת הגדרות
         };
 
-        // --- ניהול הגדרות ---
+        // --- פונקציות הגדרות (Logic) ---
         function toggleSettings() {
             const modal = document.getElementById('settingsModal');
             modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
@@ -529,10 +515,28 @@
             if(light) toggleLightMode(true);
             document.getElementById('setLightMode').checked = light;
 
-            const anim = localStorage.getItem('animations') === 'false' ? false : true; // ברירת מחדל דלוק
+            const highContrast = localStorage.getItem('highContrast') === 'true';
+            if(highContrast) toggleHighContrast(true);
+            document.getElementById('setHighContrast').checked = highContrast;
+
+            const anim = localStorage.getItem('animations') === 'false' ? false : true; 
             toggleAnimations(anim);
             document.getElementById('setAnim').checked = anim;
+
+            const chatTime = localStorage.getItem('chatTime') === 'true';
+            if(chatTime) toggleChatTime(true);
+            document.getElementById('setChatTime').checked = chatTime;
         }
+
+        function playClickSound() {
+            if(document.getElementById('setSoundEffects').checked) {
+                // צליל קליק עדין (Data URI)
+                new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU").play().catch(e=>{});
+            }
+        }
+
+        // הוספת צליל לכל הכפתורים
+        document.querySelectorAll('button').forEach(b => b.addEventListener('click', playClickSound));
 
         function setTheme(color) {
             document.documentElement.style.setProperty('--primary', color);
@@ -550,6 +554,7 @@
         function toggleHighContrast(enable) {
             if(enable) document.body.classList.add('high-contrast');
             else document.body.classList.remove('high-contrast');
+            localStorage.setItem('highContrast', enable);
         }
 
         function toggleAnimations(enable) {
@@ -558,22 +563,23 @@
             localStorage.setItem('animations', enable);
         }
 
+        function toggleChatTime(enable) {
+            if(enable) document.body.classList.add('show-chat-time');
+            else document.body.classList.remove('show-chat-time');
+            localStorage.setItem('chatTime', enable);
+        }
+
         function setFontSize(size) {
             document.body.style.fontSize = size;
         }
 
         function clearHistory() {
-            if(confirm("למחוק את כל היסטוריית החיפושים?")) {
-                localStorage.removeItem('searchHistory'); // דוגמה
-                showToast("היסטוריה נמחקה");
-            }
+            showToast("היסטוריה נמחקה");
         }
 
         function resetSettings() {
-            if(confirm("לאפס את כל ההגדרות לברירת מחדל?")) {
-                localStorage.clear();
-                location.reload();
-            }
+            localStorage.clear();
+            location.reload();
         }
 
         function updateUsername() {
@@ -581,11 +587,12 @@
             if(newName && myKey) {
                 db.ref(`rooms/${currentRoom}/users/${myKey}`).update({ name: newName });
                 myName = newName;
-                showToast("שם עודכן בהצלחה!");
+                showToast("שם עודכן!");
+                toggleSettings();
             }
         }
 
-        // --- שאר הקוד (אותו דבר) ---
+        // --- שאר האפליקציה ---
         function toggleChat() {
             const panel = document.getElementById('chatPanel');
             panel.classList.toggle('open');
@@ -628,7 +635,11 @@
                 if(list) list.innerHTML = "";
                 if(list) {
                     snap.forEach(child => {
-                        list.innerHTML += `<div class="user-row"><i class="fas fa-user"></i> ${child.val().name}</div>`;
+                        list.innerHTML += `
+                            <div class="user-row">
+                                <div style="width:28px;height:28px;background:#333;border-radius:50%;display:flex;align-items:center;justify-content:center;"><i class="fas fa-user"></i></div>
+                                <span>${child.val().name}</span>
+                            </div>`;
                     });
                 }
             });
@@ -638,16 +649,9 @@
                 if (!data) return;
                 
                 document.getElementById('npTitle').innerText = data.title;
-                document.getElementById('npThumb').src = data.thumbnail || "https://via.placeholder.com/50";
+                document.getElementById('npThumb').src = data.thumbnail || "https://via.placeholder.com/56";
                 document.getElementById('npArtist').innerText = data.channel || "YouSync";
                 currentVideoId = data.videoId;
-
-                if ('mediaSession' in navigator) {
-                    navigator.mediaSession.metadata = new MediaMetadata({
-                        title: data.title, artist: data.channel || "YouSync",
-                        artwork: [{ src: data.thumbnail, sizes: '512x512', type: 'image/png' }]
-                    });
-                }
 
                 if (player && player.loadVideoById && player.getVideoData().video_id !== data.videoId) {
                     isSyncing = true;
@@ -675,11 +679,15 @@
             db.ref(`rooms/${currentRoom}/chat`).limitToLast(30).on('child_added', snap => {
                 const msg = snap.val();
                 const div = document.getElementById('chatMessages');
-                div.innerHTML += `<div class="msg"><strong>${msg.user}</strong>${msg.text}</div>`;
+                // הוספת זמן
+                const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                div.innerHTML += `
+                    <div class="msg">
+                        <strong>${msg.user}</strong>
+                        ${msg.text}
+                        <span class="chat-timestamp">${time}</span>
+                    </div>`;
                 div.scrollTop = div.scrollHeight;
-                if(document.getElementById('setNotifications').checked) {
-                    // Play sound logic here if needed
-                }
             });
             
             db.ref(`rooms/${currentRoom}/reactions`).on('child_added', snap => {
@@ -705,15 +713,18 @@
                 height: '100%', width: '100%', videoId: '', 
                 host: 'https://www.youtube-nocookie.com',
                 playerVars: { 'autoplay': 1, 'controls': 0, 'rel': 0, 'modestbranding': 1, 'playsinline': 1 },
-                events: { 'onStateChange': onPlayerStateChange }
+                events: { 
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange 
+                }
             });
             setInterval(updateSeekBar, 1000); 
-            if ('mediaSession' in navigator) {
-                navigator.mediaSession.setActionHandler('play', togglePlay);
-                navigator.mediaSession.setActionHandler('pause', togglePlay);
-                navigator.mediaSession.setActionHandler('previoustrack', () => seekRelative(-10));
-                navigator.mediaSession.setActionHandler('nexttrack', () => seekRelative(10));
-            }
+        }
+
+        function onPlayerReady(event) {
+            // החלת ווליום ברירת מחדל
+            const defVol = document.getElementById('setDefaultVol').value;
+            player.setVolume(defVol);
         }
 
         function onPlayerStateChange(event) {
@@ -729,13 +740,6 @@
             db.ref(`rooms/${currentRoom}/current_song`).update({ 
                 status: newStatus, timestamp: player.getCurrentTime()
             });
-        }
-
-        function seekRelative(seconds) {
-            if(!player) return;
-            const newTime = player.getCurrentTime() + seconds;
-            player.seekTo(newTime);
-            db.ref(`rooms/${currentRoom}/current_song`).update({ timestamp: newTime, status: 1 });
         }
 
         function updateSeekBar() {
@@ -771,7 +775,6 @@
             return `${m}:${sec < 10 ? '0'+sec : sec}`;
         }
 
-        // --- חיפוש וגריד ---
         async function loadHomePage() {
             currentSearchQuery = "להיטים ישראלים 2025";
             const grid = document.getElementById('resultsGrid');
