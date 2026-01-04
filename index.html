@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>YouSync V33 - Real Mixer</title>
+    <title>YouSync V34 - Dual Deck & Record</title>
     
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -20,8 +20,6 @@
             --panel: #121212;
             --border: #282828;
             --text: #ffffff;
-            
-            /* DJ Colors */
             --accent-a: #00e5ff; 
             --accent-b: #ff4081;
         }
@@ -92,12 +90,21 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px;
         }
         iframe { width: 100%; height: 100%; border: none; }
+        
+        /* עדכון לכרטיסי וידאו (עם כפתור הורדה) */
         .results-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;
             width: 100%; max-width: 900px; padding-bottom: 100px;
         }
+        .video-card-container { position: relative; }
         .video-card { cursor: pointer; transition: 0.2s; background: #1a1a1a; padding: 8px; border-radius: 8px; }
         .card-img { width: 100%; border-radius: 6px; aspect-ratio: 16/9; object-fit: cover; }
+        .download-btn {
+            position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white;
+            border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .download-btn:hover { background: var(--primary); }
         
         .chat-panel { background: var(--dark); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
         .chat-messages { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
@@ -120,6 +127,13 @@
             padding: 8px 20px; background: #000; border-bottom: 2px solid #333; 
             display: flex; justify-content: space-between; align-items: center;
         }
+        .record-btn {
+            background: #333; color: #ff4444; border: 1px solid #555; padding: 5px 15px; cursor: pointer;
+            display: flex; align-items: center; gap: 5px; font-weight: bold;
+        }
+        .record-btn.recording { background: #ff4444; color: white; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
         .console-container {
             flex: 2; display: flex; padding: 10px; gap: 8px; height: 55vh;
         }
@@ -161,31 +175,22 @@
         .btn-play { background: #00e676; border: 2px solid #00a352; }
         .btn-play.active { background: #69f0ae; box-shadow: 0 0 15px #00e676; }
 
-        /* --- המיקסר (עם סליידרים עובדים!) --- */
+        /* Mixer */
         .mixer {
             flex: 2; background: #161616; border: 1px solid #333; border-radius: 4px;
             display: flex; flex-direction: column; align-items: center; padding: 15px 0;
         }
-        
         .faders-container {
             display: flex; gap: 20px; height: 150px; align-items: center; margin-top: auto;
         }
-
-        /* סליידר ווליום אנכי */
         .vol-fader-wrapper {
             position: relative; width: 40px; height: 100%; display: flex; justify-content: center;
         }
         input[type=range].vertical-fader {
-            writing-mode: bt-lr; /* IE/Edge */
-            -webkit-appearance: slider-vertical; /* Webkit */
-            width: 8px; height: 100%; cursor: pointer;
-            background: #000; border-radius: 5px;
+            writing-mode: bt-lr; -webkit-appearance: slider-vertical; width: 8px; height: 100%; cursor: pointer; background: #000; border-radius: 5px;
         }
-        
-        /* Crossfader */
         .crossfader-wrapper {
-            width: 80%; height: 40px; margin-top: 10px; margin-bottom: 10px;
-            display: flex; align-items: center;
+            width: 80%; height: 40px; margin-top: 10px; margin-bottom: 10px; display: flex; align-items: center;
         }
         input[type=range].crossfader {
             -webkit-appearance: none; width: 100%; background: transparent; cursor: pointer;
@@ -194,18 +199,20 @@
             width: 100%; height: 6px; background: #000; border: 1px solid #333; border-radius: 3px;
         }
         input[type=range].crossfader::-webkit-slider-thumb {
-            -webkit-appearance: none; height: 20px; width: 40px; background: #555; 
-            border: 1px solid #888; margin-top: -8px; border-radius: 2px;
+            -webkit-appearance: none; height: 20px; width: 40px; background: #555; border: 1px solid #888; margin-top: -8px; border-radius: 2px;
         }
 
         .dj-library { flex: 1.5; background: #0a0a0a; border-top: 2px solid #333; display: flex; flex-direction: column; }
         .dj-search { padding: 10px; background: #111; display: flex; gap: 10px; border-bottom: 1px solid #333; }
 
+        /* נגנים נסתרים */
+        .hidden-player { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
         @media (max-width: 768px) {
             #standardUI { display: flex; flex-direction: column; }
             .sidebar, .chat-panel { display: none; }
             .console-container { flex-direction: column; height: auto; }
-            .mixer { display: none; } /* נסתיר מיקסר בטלפון כי אין מקום */
+            .mixer { display: none; }
             .deck { height: 320px; margin-bottom: 10px; }
         }
     </style>
@@ -232,7 +239,8 @@
         </div>
         <div class="main-content">
             <div class="search-container"><input type="text" id="searchInput" class="search-input" placeholder="חפש שיר..."></div>
-            <div class="video-wrapper"><div id="player"></div></div>
+            <!-- נגן ראשי (למצב רגיל) -->
+            <div class="video-wrapper"><div id="mainPlayer"></div></div>
             <h3>🔥 להיטים</h3>
             <div id="resultsGrid" class="results-grid"></div>
         </div>
@@ -249,7 +257,7 @@
                 <img id="npThumb" src="https://via.placeholder.com/50" style="width:40px; border-radius:4px;">
                 <div><div id="npTitle" style="font-size:13px; font-weight:bold;">Waiting...</div></div>
             </div>
-            <button class="ctrl-btn play" onclick="togglePlay()"><i class="fas fa-play" id="playIcon"></i></button>
+            <button class="ctrl-btn play" onclick="togglePlayMain()"><i class="fas fa-play" id="playIcon"></i></button>
             <div></div>
         </div>
     </div>
@@ -258,7 +266,10 @@
     <div id="djInterface">
         <div class="dj-top-bar">
             <div style="font-family:'Share Tech Mono'; font-size:20px;">PRO <span style="color:#00e5ff">DJ</span> CONSOLE</div>
-            <button onclick="switchMode('standard')" style="background:#333; color:white; border:1px solid #555; cursor:pointer;">EXIT</button>
+            <div style="display:flex; gap:10px;">
+                <button class="record-btn" id="recBtn" onclick="toggleRecording()">● REC</button>
+                <button onclick="switchMode('standard')" style="background:#333; color:white; border:1px solid #555; cursor:pointer;">EXIT</button>
+            </div>
         </div>
 
         <div class="console-container">
@@ -274,39 +285,24 @@
                     <div class="jog-wheel" id="jogA"><img id="artA" class="jog-art" src=""></div>
                 </div>
                 <div class="transport-controls">
-                    <button class="dj-btn btn-play" id="btnPlayA" onclick="togglePlay('A')">▶</button>
+                    <button class="dj-btn btn-play" id="btnPlayA" onclick="togglePlayDeck('A')">▶</button>
                 </div>
+                <!-- נגן A נסתר -->
+                <div class="hidden-player"><div id="playerA"></div></div>
             </div>
 
             <!-- MIXER -->
             <div class="mixer">
                 <div style="color:#555; font-size:10px; margin-bottom:10px;">MASTER</div>
-                
                 <div class="faders-container">
-                    <!-- Fader A -->
-                    <div class="vol-fader-wrapper">
-                        <input type="range" class="vertical-fader" min="0" max="100" value="100" oninput="setDeckVolume('A', this.value)">
-                        <div style="position:absolute; bottom:-20px; font-size:10px; color:#aaa;">A</div>
-                    </div>
-                    
-                    <!-- Fader B -->
-                    <div class="vol-fader-wrapper">
-                        <input type="range" class="vertical-fader" min="0" max="100" value="100" oninput="setDeckVolume('B', this.value)">
-                        <div style="position:absolute; bottom:-20px; font-size:10px; color:#aaa;">B</div>
-                    </div>
+                    <div class="vol-fader-wrapper"><input type="range" class="vertical-fader" min="0" max="100" value="100" oninput="setDeckVolume('A', this.value)"><div style="position:absolute; bottom:-20px; font-size:10px; color:#aaa;">A</div></div>
+                    <div class="vol-fader-wrapper"><input type="range" class="vertical-fader" min="0" max="100" value="100" oninput="setDeckVolume('B', this.value)"><div style="position:absolute; bottom:-20px; font-size:10px; color:#aaa;">B</div></div>
                 </div>
-
                 <div style="flex:1;"></div>
-
-                <!-- Crossfader -->
                 <div style="width:100%; padding:0 10px;">
                     <div style="text-align:center; font-size:10px; color:#555;">CROSSFADER</div>
-                    <div class="crossfader-wrapper">
-                        <input type="range" class="crossfader" min="0" max="100" value="50" oninput="setCrossfader(this.value)">
-                    </div>
-                    <div style="display:flex; justify-content:space-between; font-size:10px; color:#555;">
-                        <span>A</span><span>B</span>
-                    </div>
+                    <div class="crossfader-wrapper"><input type="range" class="crossfader" min="0" max="100" value="50" oninput="setCrossfader(this.value)"></div>
+                    <div style="display:flex; justify-content:space-between; font-size:10px; color:#555;"><span>A</span><span>B</span></div>
                 </div>
             </div>
 
@@ -322,8 +318,10 @@
                     <div class="jog-wheel" id="jogB"><img id="artB" class="jog-art" src=""></div>
                 </div>
                 <div class="transport-controls">
-                    <button class="dj-btn btn-play" id="btnPlayB" onclick="togglePlay('B')">▶</button>
+                    <button class="dj-btn btn-play" id="btnPlayB" onclick="togglePlayDeck('B')">▶</button>
                 </div>
+                <!-- נגן B נסתר -->
+                <div class="hidden-player"><div id="playerB"></div></div>
             </div>
         </div>
 
@@ -350,56 +348,54 @@
         try { firebase.initializeApp(firebaseConfig); } catch(e){}
         const db = firebase.database();
 
-        let player, isSyncing = false, currentRoom = null, myName = "";
-        let deckA_Data = null, deckB_Data = null, activeDeck = 'A';
+        // נגנים
+        let mainPlayer, playerA, playerB;
+        let isSyncing = false, currentRoom = null, myName = "";
+        let deckA_Data = null, deckB_Data = null;
         
-        // משתני ווליום למיקסר
+        // מיקסר והקלטה
         let volA = 100, volB = 100, xFader = 50;
+        let mediaRecorder, audioChunks = [];
+        let isRecording = false;
 
         function switchMode(mode) {
             if (mode === 'dj') {
                 document.getElementById('standardUI').style.display = 'none';
                 document.getElementById('djInterface').style.display = 'flex';
                 searchAndRender("Hits 2025", 'djSongList', true);
+                if(mainPlayer) mainPlayer.pauseVideo(); // עצירת נגן ראשי
             } else {
                 document.getElementById('djInterface').style.display = 'none';
                 document.getElementById('standardUI').style.display = (window.innerWidth > 768) ? 'grid' : 'flex';
-                const wrapper = document.querySelector('.video-wrapper');
-                wrapper.appendChild(document.getElementById('player'));
+                if(playerA) playerA.pauseVideo(); // עצירת נגני DJ
+                if(playerB) playerB.pauseVideo();
             }
         }
 
-        // --- לוגיקת מיקסר (חדש!) ---
+        // --- לוגיקת מיקסר ---
         function setDeckVolume(deck, val) {
             if (deck === 'A') volA = parseInt(val);
             else volB = parseInt(val);
-            updateMasterVolume();
+            updateVolumes();
         }
 
         function setCrossfader(val) {
             xFader = parseInt(val);
-            updateMasterVolume();
+            updateVolumes();
         }
 
-        function updateMasterVolume() {
-            if (!player) return;
+        function updateVolumes() {
+            if (!playerA || !playerB) return;
             
-            // חישוב הווליום האמיתי לפי הדק הפעיל והקרוספיידר
-            let finalVol = 100;
+            // חישוב ווליום לכל דק בנפרד
+            let xFactorA = (xFader > 50) ? (100 - xFader) * 2 : 100; 
+            let finalVolA = (volA * xFactorA) / 100;
+
+            let xFactorB = (xFader < 50) ? xFader * 2 : 100;
+            let finalVolB = (volB * xFactorB) / 100;
             
-            if (activeDeck === 'A') {
-                // אם מנגנים את A: מושפע מהסליידר של A ומצד שמאל של הקרוספיידר
-                // אם הקרוספיידר בצד ימין (מעל 50), הווליום של A יורד
-                let xFactor = (xFader > 50) ? (100 - xFader) * 2 : 100; 
-                finalVol = (volA * xFactor) / 100;
-            } else {
-                // אם מנגנים את B: מושפע מהסליידר של B ומצד ימין של הקרוספיידר
-                // אם הקרוספיידר בצד שמאל (מתחת ל50), הווליום של B יורד
-                let xFactor = (xFader < 50) ? xFader * 2 : 100;
-                finalVol = (volB * xFactor) / 100;
-            }
-            
-            player.setVolume(finalVol);
+            playerA.setVolume(finalVolA);
+            playerB.setVolume(finalVolB);
         }
 
         // --- כניסה ---
@@ -419,7 +415,7 @@
             document.getElementById('standardUI').style.display = (window.innerWidth > 768) ? 'grid' : 'flex';
             document.getElementById('stdRoomCode').innerText = code;
 
-            loadYoutubePlayer();
+            loadYoutubeAPI();
             loadHomePage(); 
 
             const userRef = db.ref(`rooms/${code}/users`).push();
@@ -436,33 +432,22 @@
                 snap.forEach(child => list.innerHTML += `<div>👤 ${child.val().name}</div>`);
             });
 
+            // האזנה לנגן הראשי (מצב רגיל)
             db.ref(`rooms/${currentRoom}/current_song`).on('value', snap => {
                 const data = snap.val();
                 if (!data) return;
-                
                 document.getElementById('npTitle').innerText = data.title;
                 document.getElementById('npThumb').src = data.thumbnail || "https://via.placeholder.com/50";
                 
-                // עדכון DJ
-                const jogA = document.getElementById('jogA');
-                const jogB = document.getElementById('jogB');
-                jogA.classList.remove('rotating'); jogB.classList.remove('rotating');
-
-                if (deckA_Data && deckA_Data.id === data.videoId && data.status === 1) jogA.classList.add('rotating');
-                if (deckB_Data && deckB_Data.id === data.videoId && data.status === 1) jogB.classList.add('rotating');
-
-                if (player && player.loadVideoById && player.getVideoData().video_id !== data.videoId) {
-                    isSyncing = true;
-                    player.loadVideoById(data.videoId);
-                    setTimeout(() => isSyncing = false, 1500);
+                if (mainPlayer && mainPlayer.loadVideoById && mainPlayer.getVideoData().video_id !== data.videoId) {
+                    isSyncing = true; mainPlayer.loadVideoById(data.videoId); setTimeout(() => isSyncing = false, 1500);
                 }
-
                 if (data.status === 1) {
                     document.getElementById('playIcon').className = "fas fa-pause";
-                    if (player && player.playVideo) player.playVideo();
+                    if (mainPlayer && mainPlayer.playVideo) mainPlayer.playVideo();
                 } else {
                     document.getElementById('playIcon').className = "fas fa-play";
-                    if (player && player.pauseVideo) player.pauseVideo();
+                    if (mainPlayer && mainPlayer.pauseVideo) mainPlayer.pauseVideo();
                 }
             });
 
@@ -474,111 +459,163 @@
             });
         }
 
-        function loadYoutubePlayer() {
+        // --- טעינת נגני יוטיוב ---
+        function loadYoutubeAPI() {
             var tag = document.createElement('script');
             tag.src = "https://www.youtube.com/iframe_api";
             var firstScriptTag = document.getElementsByTagName('script')[0];
             firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
         }
         function onYouTubeIframeAPIReady() {
-            player = new YT.Player('player', {
+            // נגן ראשי
+            mainPlayer = new YT.Player('mainPlayer', {
                 height: '100%', width: '100%', videoId: '', 
-                host: 'https://www.youtube-nocookie.com',
-                playerVars: { 'autoplay': 1, 'controls': 0, 'rel': 0, 'modestbranding': 1, 'playsinline': 1 },
-                events: { 'onStateChange': onPlayerStateChange }
+                playerVars: { 'autoplay': 1, 'controls': 0, 'rel': 0, 'playsinline': 1 },
+                events: { 'onStateChange': onMainPlayerStateChange }
+            });
+            // נגן A
+            playerA = new YT.Player('playerA', {
+                height: '100', width: '100', videoId: '', 
+                playerVars: { 'autoplay': 0, 'controls': 0, 'playsinline': 1 },
+                events: { 'onStateChange': (e) => onDeckStateChange('A', e) }
+            });
+            // נגן B
+            playerB = new YT.Player('playerB', {
+                height: '100', width: '100', videoId: '', 
+                playerVars: { 'autoplay': 0, 'controls': 0, 'playsinline': 1 },
+                events: { 'onStateChange': (e) => onDeckStateChange('B', e) }
             });
         }
-        function onPlayerStateChange(event) {
+
+        function onMainPlayerStateChange(event) {
             if (isSyncing || !currentRoom) return;
             if (event.data === 1 || event.data === 2) {
                 db.ref(`rooms/${currentRoom}/current_song`).update({ status: event.data });
+            }
+        }
+        
+        function onDeckStateChange(deck, event) {
+            const btn = document.getElementById(`btnPlay${deck}`);
+            const jog = document.getElementById(`jog${deck}`);
+            
+            if (event.data === 1) { // מנגן
+                btn.classList.add('active'); btn.innerHTML = '<i class="fas fa-pause"></i>';
+                jog.classList.add('rotating');
+            } else {
+                btn.classList.remove('active'); btn.innerHTML = '▶';
+                jog.classList.remove('rotating');
             }
         }
 
         // --- DJ Functions ---
         function allowDrop(ev) { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); }
         function drag(ev, id, title, thumb) {
-            ev.dataTransfer.setData("id", id);
-            ev.dataTransfer.setData("title", title);
-            ev.dataTransfer.setData("thumb", thumb);
+            ev.dataTransfer.setData("id", id); ev.dataTransfer.setData("title", title); ev.dataTransfer.setData("thumb", thumb);
         }
         function drop(ev, deck) {
             ev.preventDefault(); ev.currentTarget.classList.remove('drag-over');
-            const id = ev.dataTransfer.getData("id");
-            const title = ev.dataTransfer.getData("title");
-            const thumb = ev.dataTransfer.getData("thumb");
-            loadDeck(deck, id, title, thumb);
+            loadDeck(deck, ev.dataTransfer.getData("id"), ev.dataTransfer.getData("title"), ev.dataTransfer.getData("thumb"));
         }
 
         function loadDeck(deck, id, title, thumb) {
             const data = { id, title, thumb };
             document.getElementById(`title${deck}`).innerText = title;
             document.getElementById(`art${deck}`).src = thumb;
-            if(deck === 'A') deckA_Data = data; else deckB_Data = data;
+            
+            if(deck === 'A') { deckA_Data = data; playerA.loadVideoById(id); playerA.pauseVideo(); }
+            else { deckB_Data = data; playerB.loadVideoById(id); playerB.pauseVideo(); }
         }
 
-        function togglePlay(deck) {
-            if (deck) { 
-                const data = (deck === 'A') ? deckA_Data : deckB_Data;
-                if (!data) return;
-                
-                // החלפת דק פעיל
-                if (activeDeck !== deck) {
-                    activeDeck = deck;
-                    db.ref(`rooms/${currentRoom}/current_song`).set({ videoId: data.id, title: data.title, thumbnail: data.thumb, status: 1 });
-                    updateMasterVolume(); // עדכון ווליום לדק החדש
-                } else {
-                    if(!player) return;
-                    const newStatus = (player.getPlayerState() === 1) ? 2 : 1;
-                    db.ref(`rooms/${currentRoom}/current_song`).update({ status: newStatus });
-                }
-            } else { 
-                if(!player) return;
-                const newStatus = (player.getPlayerState() === 1) ? 2 : 1;
-                db.ref(`rooms/${currentRoom}/current_song`).update({ status: newStatus });
+        function togglePlayDeck(deck) {
+            const p = (deck === 'A') ? playerA : playerB;
+            if(!p) return;
+            if(p.getPlayerState() === 1) p.pauseVideo(); else p.playVideo();
+        }
+
+        function togglePlayMain() {
+            if(!mainPlayer) return;
+            const newStatus = (mainPlayer.getPlayerState() === 1) ? 2 : 1;
+            db.ref(`rooms/${currentRoom}/current_song`).update({ status: newStatus });
+        }
+
+        // --- הורדה והקלטה ---
+        async function downloadSong(id) {
+            const btn = event.target.closest('button');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            
+            const url = `https://${RAPID_API_HOST}/dl?id=${id}`;
+            const options = { method: 'GET', headers: { 'X-RapidAPI-Key': RAPID_API_KEY, 'X-RapidAPI-Host': RAPID_API_HOST } };
+            try {
+                const res = await fetch(url, options); const data = await res.json();
+                if(data.link) window.open(data.link, '_blank'); else throw new Error();
+            } catch(e) { window.open(`https://tomp3.cc/youtube-downloader/${id}`, '_blank'); }
+            finally { btn.innerHTML = originalHtml; }
+        }
+
+        async function toggleRecording() {
+            const btn = document.getElementById('recBtn');
+            if (!isRecording) {
+                try {
+                    // ניסיון להקליט אודיו מהדפדפן (דורש הרשאה)
+                    const stream = await navigator.mediaDevices.getDisplayMedia({ video: false, audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = saveRecording;
+                    mediaRecorder.start();
+                    isRecording = true;
+                    btn.classList.add('recording'); btn.innerText = '● STOP';
+                } catch(e) { alert("Recording not supported or denied."); }
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                btn.classList.remove('recording'); btn.innerText = '● REC';
             }
         }
 
-        async function loadHomePage() { searchAndRender("Hits 2025", 'resultsGrid', false); }
-        document.getElementById('searchInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') searchAndRender(e.target.value, 'resultsGrid', false);
-        });
-        function searchVideosDJ() {
-            const q = document.getElementById('djSearchInput').value;
-            if(q) searchAndRender(q, 'djSongList', true);
+        function saveRecording() {
+            const blob = new Blob(audioChunks, { type: 'audio/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `DJ_Mix_${new Date().getTime()}.webm`;
+            a.click(); URL.revokeObjectURL(url);
         }
+
+        // --- חיפוש וגריד ---
+        async function loadHomePage() { searchAndRender("Hits 2025", 'resultsGrid', false); }
+        document.getElementById('searchInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') searchAndRender(e.target.value, 'resultsGrid', false); });
+        function searchVideosDJ() { searchAndRender(document.getElementById('djSearchInput').value, 'djSongList', true); }
 
         async function searchAndRender(query, elementId, isDraggable) {
             const grid = document.getElementById(elementId);
             grid.innerHTML = '<p>טוען...</p>';
             const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=20&q=${encodeURIComponent(query)}&key=${YOUTUBE_API_KEY}`;
             try {
-                const res = await fetch(url);
-                const data = await res.json();
-                grid.innerHTML = "";
+                const res = await fetch(url); const data = await res.json(); grid.innerHTML = "";
                 data.items.forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = 'video-card';
+                    const container = document.createElement('div'); container.className = 'video-card-container';
+                    const div = document.createElement('div'); div.className = 'video-card';
+                    
                     if(isDraggable) {
                         div.draggable = true;
                         div.ondragstart = (e) => drag(e, item.id.videoId, item.snippet.title, item.snippet.thumbnails.default.url);
                         div.onclick = () => { if(confirm("Load to Deck A?")) loadDeck('A', item.id.videoId, item.snippet.title, item.snippet.thumbnails.default.url); }
                     } else {
-                        div.onclick = () => playVideo(item.id.videoId, item.snippet.title, item.snippet.thumbnails.medium.url);
+                        div.onclick = () => db.ref(`rooms/${currentRoom}/current_song`).set({ videoId: item.id.videoId, title: item.snippet.title, thumbnail: item.snippet.thumbnails.medium.url, status: 1 });
                     }
                     div.innerHTML = `<img src="${item.snippet.thumbnails.medium.url}" class="card-img"><div class="card-title">${item.snippet.title}</div>`;
-                    grid.appendChild(div);
+                    
+                    // כפתור הורדה
+                    const dlBtn = document.createElement('button');
+                    dlBtn.className = 'download-btn'; dlBtn.innerHTML = '<i class="fas fa-download"></i>';
+                    dlBtn.onclick = (e) => { e.stopPropagation(); downloadSong(item.id.videoId); };
+                    
+                    container.appendChild(div); container.appendChild(dlBtn); grid.appendChild(container);
                 });
             } catch(e) {}
         }
-
-        function playVideo(id, title, thumb) {
-            db.ref(`rooms/${currentRoom}/current_song`).set({ videoId: id, title: title, thumbnail: thumb, status: 1 });
-        }
-        function sendMessage() {
-            const input = document.getElementById('chatInput');
-            if(input.value) { db.ref(`rooms/${currentRoom}/chat`).push({ user: myName, text: input.value }); input.value = ""; }
-        }
+        function sendMessage() { const input = document.getElementById('chatInput'); if(input.value) { db.ref(`rooms/${currentRoom}/chat`).push({ user: myName, text: input.value }); input.value = ""; }}
     </script>
 </body>
 </html>
